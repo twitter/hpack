@@ -1,0 +1,33 @@
+{
+  "maxHeaderSize": "128",
+  "context": "request",
+  "forceHuffmanOff": "true",
+  "headerBlocks":
+  [
+    {
+      "headers": [
+        { "name1": "val1" },
+        { "name2": "val2" },
+        { "name3": "val3" }
+      ],
+      "encoded": [
+        "00056e616d65310476616c31",
+        "00056e616d65320476616c32",
+        "00056e616d65330476616c33"
+      ]
+    }, {
+      "headers": [
+        { "name1": "val1" },
+        { "name2": "val2" },
+        { "name3": "val3" }
+      ],
+      "encoded": [ "" ]
+    }, {
+      "headers": [
+        { "x-evict": "multiple headers" },
+        { "name3": "val3" }
+      ],
+      "encoded": [ "0007782d6576696374106d756c7469706c652068656164657273" ]
+    }
+  ]
+}

@@ -18,27 +18,30 @@ package com.twitter.hpack;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.twitter.hpack.HpackUtil.ReferenceHeader;
 
-/**
- * <a href="http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-03">
- * HPACK: HTTP/2.0 Header Compression</a>
- */
-public class Decompressor {
+import static com.twitter.hpack.HpackUtil.HEADER_ENTRY_OVERHEAD;
+
+public final class Decompressor {
 
   private static final IOException DECOMPRESSION_EXCEPTION = new IOException("decompression failure");
 
-  private final List<ReferenceHeader> headerTable;
-  private int headerTableSize;
+  private final HuffmanDecoder huffmanDecoder;
 
-  private final int maxHeaderSize;
+  private final List<ReferenceHeader> headerTable = new ArrayList<ReferenceHeader>();
+  private int headerTableSize;
+  private int maxHeaderTableSize;
+
+  private int maxHeaderSize;
   private long headerSize;
 
   private State state;
   private IndexType indexType;
   private int index;
+  private boolean huffmanEncoded;
   private int skipLength;
   private int nameLength;
   private int valueLength;
@@ -49,10 +52,11 @@ public class Decompressor {
     READ_HEADER_REPRESENTATION,
     READ_INDEXED_HEADER,
     READ_INDEXED_HEADER_NAME,
+    READ_LITERAL_HEADER_NAME_LENGTH_PREFIX,
     READ_LITERAL_HEADER_NAME_LENGTH,
     READ_LITERAL_HEADER_NAME,
     SKIP_LITERAL_HEADER_NAME,
-    READ_SUBSTITUTED_INDEX,
+    READ_LITERAL_HEADER_VALUE_LENGTH_PREFIX,
     READ_LITERAL_HEADER_VALUE_LENGTH,
     READ_LITERAL_HEADER_VALUE,
     SKIP_LITERAL_HEADER_VALUE
@@ -60,19 +64,17 @@ public class Decompressor {
 
   private enum IndexType {
     NONE,
-    INCREMENTAL,
-    SUBSTITUTION
+    INCREMENTAL
   }
 
   public Decompressor(boolean server, int maxHeaderSize) {
-    if (server) {
-      headerTable = HpackUtil.newRequestTable();
-      headerTableSize = HpackUtil.REQUEST_TABLE_SIZE;
-    } else {
-      headerTable = HpackUtil.newResponseTable();
-      headerTableSize = HpackUtil.RESPONSE_TABLE_SIZE;
-    }
+    this(server, maxHeaderSize, HpackUtil.MAX_HEADER_TABLE_SIZE);
+  }
+
+  public Decompressor(boolean server, int maxHeaderSize, int maxHeaderTableSize) {
+    this.huffmanDecoder = server ? HpackUtil.REQUEST_DECODER : HpackUtil.RESPONSE_DECODER;
     this.maxHeaderSize = maxHeaderSize;
+    this.maxHeaderTableSize = maxHeaderTableSize;
     reset();
   }
 
@@ -90,58 +92,25 @@ public class Decompressor {
         if (b < 0) {
           // Indexed Header Representation
           index = b & 0x7F;
-          if (index == 0x7F) {
+          if (index == 0) {
+            clearReferenceSet();
+          } else if (index == 0x7F) {
             state = State.READ_INDEXED_HEADER;
           } else {
             toggleIndex(index, headerListener);
           }
-
-        } else if ((b & 0x40) == 0) {
-          // Literal Header with Substitution Indexing
-          indexType = IndexType.SUBSTITUTION;
+        } else {
+          // Literal Header Representation
+          indexType = ((b & 0x40) == 0x40) ? IndexType.NONE : IndexType.INCREMENTAL;
           index = b & 0x3F;
           if (index == 0) {
-            state = State.READ_LITERAL_HEADER_NAME_LENGTH;
+            state = State.READ_LITERAL_HEADER_NAME_LENGTH_PREFIX;
           } else if (index == 0x3F) {
-            // Index + 1 was stored as the prefix
-            index--;
             state = State.READ_INDEXED_HEADER_NAME;
           } else {
-            // Index + 1 was stored as the prefix
-            readName(index - 1);
-            state = State.READ_SUBSTITUTED_INDEX;
-          }
-
-        } else if ((b & 0x20) == 0) {
-          // Literal Header with Incremental Indexing
-          indexType = IndexType.INCREMENTAL;
-          index = b & 0x1F;
-          if (index == 0) {
-            state = State.READ_LITERAL_HEADER_NAME_LENGTH;
-          } else if (index == 0x1F) {
-            // Index + 1 was stored as the prefix
-            index--;
-            state = State.READ_INDEXED_HEADER_NAME;
-          } else {
-            // Index + 1 was stored as the prefix
-            readName(index - 1);
-            state = State.READ_LITERAL_HEADER_VALUE_LENGTH;
-          }
-
-        } else {
-          // Literal Header without Indexing
-          indexType = IndexType.NONE;
-          index = b & 0x1F;
-          if (index == 0) {
-            state = State.READ_LITERAL_HEADER_NAME_LENGTH;
-          } else if (index == 0x1F) {
-            // Index + 1 was stored as the prefix
-            index--;
-            state = State.READ_INDEXED_HEADER_NAME;
-          } else {
-            // Index + 1 was stored as the prefix
-            readName(index - 1);
-            state = State.READ_LITERAL_HEADER_VALUE_LENGTH;
+            // Index was stored as the prefix
+            readName(index);
+            state = State.READ_LITERAL_HEADER_VALUE_LENGTH_PREFIX;
           }
         }
         break;
@@ -174,10 +143,45 @@ public class Decompressor {
         }
 
         readName(index + nameIndex);
-        if (indexType == IndexType.SUBSTITUTION) {
-          state = State.READ_SUBSTITUTED_INDEX;
+        state = State.READ_LITERAL_HEADER_VALUE_LENGTH_PREFIX;
+        break;
+
+      case READ_LITERAL_HEADER_NAME_LENGTH_PREFIX:
+        b = (byte) in.read();
+        huffmanEncoded = (b & 0x80) == 0x80;
+        index = b & 0x7F;
+        if (index == 0x7f) {
+          state = State.READ_LITERAL_HEADER_NAME_LENGTH;
         } else {
-          state = State.READ_LITERAL_HEADER_VALUE_LENGTH;
+          nameLength = index;
+
+          // Disallow empty names -- they cannot be represented in HTTP/1.x
+          if (nameLength == 0) {
+            throw DECOMPRESSION_EXCEPTION;
+          }
+
+          // Check name length against max header size
+          if (exceedsMaxHeaderSize(nameLength)) {
+
+            if (indexType == IndexType.NONE) {
+              // Name is unused so skip bytes
+              name = HpackUtil.EMPTY;
+              skipLength = nameLength;
+              state = State.SKIP_LITERAL_HEADER_NAME;
+              break;
+            }
+
+            // Check name length against max header table size
+            if (nameLength + HEADER_ENTRY_OVERHEAD > maxHeaderTableSize) {
+              headerTable.clear();
+              headerTableSize = 0;
+              name = HpackUtil.EMPTY;
+              skipLength = nameLength;
+              state = State.SKIP_LITERAL_HEADER_NAME;
+              break;
+            }
+          }
+          state = State.READ_LITERAL_HEADER_NAME;
         }
         break;
 
@@ -188,16 +192,14 @@ public class Decompressor {
           return;
         }
 
-        // Disallow empty names -- they cannot be represented in HTTP/1.x
-        if (nameLength == 0) {
+        // Check for numerical overflow
+        if (nameLength > Integer.MAX_VALUE - index) {
           throw DECOMPRESSION_EXCEPTION;
         }
+        nameLength += index;
 
         // Check name length against max header size
-        if (nameLength + headerSize > maxHeaderSize) {
-          // truncation will be reported during endHeaderBlock
-          headerSize = maxHeaderSize + 1;
-
+        if (exceedsMaxHeaderSize(nameLength)) {
           if (indexType == IndexType.NONE) {
             // Name is unused so skip bytes
             name = HpackUtil.EMPTY;
@@ -207,7 +209,7 @@ public class Decompressor {
           }
 
           // Check name length against max header table size
-          if (nameLength + ReferenceHeader.HEADER_ENTRY_OVERHEAD > HpackUtil.MAX_HEADER_TABLE_SIZE) {
+          if (nameLength + HEADER_ENTRY_OVERHEAD > maxHeaderTableSize) {
             headerTable.clear();
             headerTableSize = 0;
             name = HpackUtil.EMPTY;
@@ -225,41 +227,60 @@ public class Decompressor {
           return;
         }
 
-        byte[] nameBytes = new byte[nameLength];
-        in.read(nameBytes);
+        byte[] nameBytes = readString(in, nameLength);
+        nameLength = nameBytes.length;
         name = new String(nameBytes, StandardCharsets.UTF_8);
 
-        if (indexType == IndexType.SUBSTITUTION) {
-          state = State.READ_SUBSTITUTED_INDEX;
-        } else {
-          state = State.READ_LITERAL_HEADER_VALUE_LENGTH;
-        }
+        state = State.READ_LITERAL_HEADER_VALUE_LENGTH_PREFIX;
         break;
 
       case SKIP_LITERAL_HEADER_NAME:
         skipLength -= in.skip(skipLength);
 
         if (skipLength == 0) {
-          if (indexType == IndexType.SUBSTITUTION) {
-            state = State.READ_SUBSTITUTED_INDEX;
-          } else {
-            state = State.READ_LITERAL_HEADER_VALUE_LENGTH;
-          }
+          state = State.READ_LITERAL_HEADER_VALUE_LENGTH_PREFIX;
         }
         break;
 
-      case READ_SUBSTITUTED_INDEX:
-        // Substituted Index
-        index = decodeULE128(in);
-        if (index == -1) {
-          return;
+      case READ_LITERAL_HEADER_VALUE_LENGTH_PREFIX:
+        b = (byte) in.read();
+        huffmanEncoded = (b & 0x80) == 0x80;
+        index = b & 0x7F;
+        if (index == 0x7f) {
+          state = State.READ_LITERAL_HEADER_VALUE_LENGTH;
+        } else {
+          valueLength = index;
+
+          // Check new header size against max header size
+          long newHeaderSize = (long) nameLength + (long) valueLength;
+          if (exceedsMaxHeaderSize(newHeaderSize)) {
+            // truncation will be reported during endHeaderBlock
+            headerSize = maxHeaderSize + 1;
+
+            if (indexType == IndexType.NONE) {
+              // Value is unused so skip bytes
+              state = State.SKIP_LITERAL_HEADER_VALUE;
+              break;
+            }
+
+            // Check new header size against max header table size
+            if (newHeaderSize + HEADER_ENTRY_OVERHEAD > maxHeaderTableSize) {
+              headerTable.clear();
+              headerTableSize = 0;
+              state = State.SKIP_LITERAL_HEADER_VALUE;
+              break;
+            }
+          }
+
+          if (valueLength == 0) {
+            value = HpackUtil.EMPTY;
+            insertHeader(headerListener, name, value, indexType);
+            state = State.READ_HEADER_REPRESENTATION;
+          } else {
+            state = State.READ_LITERAL_HEADER_VALUE;
+          }
         }
 
-        if (index >= headerTable.size()) {
-          throw DECOMPRESSION_EXCEPTION;
-        }
-
-        state = State.READ_LITERAL_HEADER_VALUE_LENGTH;
         break;
 
       case READ_LITERAL_HEADER_VALUE_LENGTH:
@@ -269,12 +290,11 @@ public class Decompressor {
           return;
         }
 
-        if (valueLength == 0) {
-          value = HpackUtil.EMPTY;
-          insertHeader(headerListener);
-          state = State.READ_HEADER_REPRESENTATION;
-          break;
+        // Check for numerical overflow
+        if (valueLength > Integer.MAX_VALUE - index) {
+          throw DECOMPRESSION_EXCEPTION;
         }
+        valueLength += index;
 
         // Check new header size against max header size
         long newHeaderSize = (long) nameLength + (long) valueLength;
@@ -289,7 +309,7 @@ public class Decompressor {
           }
 
           // Check new header size against max header table size
-          if (newHeaderSize + ReferenceHeader.HEADER_ENTRY_OVERHEAD > HpackUtil.MAX_HEADER_TABLE_SIZE) {
+          if (newHeaderSize + HEADER_ENTRY_OVERHEAD > maxHeaderTableSize) {
             headerTable.clear();
             headerTableSize = 0;
             state = State.SKIP_LITERAL_HEADER_VALUE;
@@ -305,10 +325,10 @@ public class Decompressor {
           return;
         }
 
-        byte[] valueBytes = new byte[valueLength];
-        in.read(valueBytes);
+        byte[] valueBytes = readString(in, valueLength);
+        valueLength = valueBytes.length;
         value = new String(valueBytes, StandardCharsets.UTF_8);
-        insertHeader(headerListener);
+        insertHeader(headerListener, name, value, indexType);
         state = State.READ_HEADER_REPRESENTATION;
         break;
 
@@ -339,30 +359,37 @@ public class Decompressor {
   }
 
   private void readName(int index) throws IOException {
-    if (index >= headerTable.size()) {
+    if (index <= headerTable.size()) {
+      ReferenceHeader referenceHeader = headerTable.get(index - 1);
+      name = referenceHeader.name;
+      nameLength = referenceHeader.nameLength;
+    } else if (index - headerTable.size() <= StaticTable.size()) {
+      name = StaticTable.getEntry(index - headerTable.size()).getName();
+      nameLength = name.length();
+    } else {
       throw DECOMPRESSION_EXCEPTION;
     }
-    ReferenceHeader referenceHeader = headerTable.get(index);
-    name = referenceHeader.name;
-    nameLength =referenceHeader.nameLength;
   }
 
   private void toggleIndex(int index, HeaderListener headerListener) throws IOException {
-    if (index >= headerTable.size()) {
-      throw DECOMPRESSION_EXCEPTION;
-    }
-
-    ReferenceHeader referenceHeader = headerTable.get(index);
-    if (referenceHeader.inReferenceSet) {
-      referenceHeader.inReferenceSet = false;
+    if (index <= headerTable.size()) {
+      ReferenceHeader referenceHeader = headerTable.get(index - 1);
+      if (referenceHeader.inReferenceSet) {
+        referenceHeader.inReferenceSet = false;
+      } else {
+        referenceHeader.inReferenceSet = true;
+        referenceHeader.emitted = true;
+        emitHeader(headerListener, referenceHeader.name, referenceHeader.value);
+      }
+    } else if (index - headerTable.size() <= StaticTable.size()) {
+      StaticTable.Entry staticEntry = StaticTable.getEntry(index - headerTable.size());
+      insertHeader(headerListener, staticEntry.getName(), staticEntry.getValue(), IndexType.INCREMENTAL);
     } else {
-      referenceHeader.inReferenceSet = true;
-      referenceHeader.emitted = true;
-      emitHeader(headerListener, referenceHeader.name, referenceHeader.value);
+      throw DECOMPRESSION_EXCEPTION;
     }
   }
 
-  private void insertHeader(HeaderListener headerListener) {
+  private void insertHeader(HeaderListener headerListener, String name, String value, IndexType indexType) {
     emitHeader(headerListener, name, value);
 
     switch (indexType) {
@@ -374,52 +401,17 @@ public class Decompressor {
         referenceHeader.emitted = true;
         referenceHeader.inReferenceSet = true;
         int headerSize = referenceHeader.size();
-        if (headerSize > HpackUtil.MAX_HEADER_TABLE_SIZE) {
+        if (headerSize > maxHeaderTableSize) {
           headerTable.clear();
           headerTableSize = 0;
           break;
         }
-        while (headerTableSize + headerSize > HpackUtil.MAX_HEADER_TABLE_SIZE) {
-          ReferenceHeader removedHeader = headerTable.remove(0);
+        while (headerTableSize + headerSize > maxHeaderTableSize) {
+          ReferenceHeader removedHeader = headerTable.remove(headerTable.size() - 1);
           headerTableSize -= removedHeader.size();
         }
-        headerTable.add(referenceHeader);
+        headerTable.add(0, referenceHeader);
         headerTableSize += headerSize;
-        break;
-
-      case SUBSTITUTION:
-        // When the modification of the header table is the replacement of an
-        // existing entry, the replaced entry is the one indicated in the
-        // literal representation before any entry is removed from the header
-        // table.  If the entry to be replaced is removed from the header table
-        // when performing the size adjustment, the replacement entry is
-        // inserted at the beginning of the header table.
-        ReferenceHeader replacedHeader = headerTable.get(index);
-        int oldHeaderSize = replacedHeader.size();
-        ReferenceHeader substitutedHeader = new ReferenceHeader(name, value, nameLength, valueLength);
-        substitutedHeader.emitted = true;
-        substitutedHeader.inReferenceSet = true;
-        int newHeaderSize = substitutedHeader.size();
-        if (newHeaderSize > HpackUtil.MAX_HEADER_TABLE_SIZE) {
-          headerTable.clear();
-          headerTableSize = 0;
-          break;
-        }
-        while (headerTableSize + newHeaderSize - oldHeaderSize > HpackUtil.MAX_HEADER_TABLE_SIZE) {
-          ReferenceHeader removedHeader = headerTable.remove(0);
-          headerTableSize -= removedHeader.size();
-          if (index == 0) {
-            oldHeaderSize = 0;
-          }
-          if (index >= 0) {
-            index--;
-          }
-        }
-        if (index < 0) {
-          headerTable.add(0, substitutedHeader);
-        } else {
-          headerTable.set(index, substitutedHeader);
-        }
         break;
 
       default:
@@ -438,6 +430,35 @@ public class Decompressor {
     } else {
       // truncation will be reported during endHeaderBlock
       headerSize = maxHeaderSize + 1;
+    }
+  }
+
+  private void clearReferenceSet() {
+    for (ReferenceHeader referenceHeader : headerTable) {
+      referenceHeader.inReferenceSet = false;
+    }
+  }
+
+  private boolean exceedsMaxHeaderSize(long size) {
+    // Check new header size against max header size
+    if (size + headerSize <= maxHeaderSize) {
+      return false;
+    }
+
+    // truncation will be reported during endHeaderBlock
+    headerSize = maxHeaderSize + 1;
+    return true;
+  }
+
+  private byte[] readString(InputStream in, int length) throws IOException {
+    byte[] buf = new byte[length];
+    in.read(buf);
+
+    if (huffmanEncoded) {
+      byte[] decoded = huffmanDecoder.decode(buf);
+      return decoded;
+    } else {
+      return buf;
     }
   }
 

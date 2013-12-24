@@ -1,0 +1,43 @@
+{
+  "maxHeaderSize": "128",
+  "context": "request",
+  "forceHuffmanOn": "true",
+  "headerBlocks":
+  [
+    {
+      "headers": [
+        { ":path": "/somepath" },
+        { "x-custom": "val1" },
+        { "x-custom": "val2" },
+        { "x-custom": "val3" }
+      ],
+      "encoded": [ "048608374172239f0086f3953ac22dd383e6859b0183e6859f0183e685cd" ]
+    },
+    {
+      "headers": [
+        { ":path": "/somepath" },
+        { "x-custom": "val4" },
+        { "x-custom": "val5" },
+        { "x-custom": "val6" }
+      ],
+      "comment": [
+        "Original example unnecessarily removed to-be-evicted headers from reference set.",
+        "82068608374172239f820283e685cf0183e685d10183e685d3"
+      ],
+      "encoded": [ "068608374172239f0283e685cf0183e685d10183e685d3" ]
+    },
+    {
+      "headers": [
+        { ":path": "/somepath" },
+        { "x-custom": "val1" },
+        { "x-custom": "val2" },
+        { "x-custom": "val3" }
+      ],
+      "comment": [
+        "Original example unnecessarily removed to-be-evicted headers from reference set.",
+        "82068608374172239f820283e6859b0183e6859f0183e685cd"
+      ],
+      "encoded": [ "068608374172239f0283e6859b0183e6859f0183e685cd" ]
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "context": "request",
+  "forceHuffmanOff": "true",
+  "headerBlocks":
+  [
+    {
+      "headers": [
+        { ":authority": "twitter.com" }
+      ],
+      "encoded": [ "010B747769747465722e636f6d" ]
+    }, {
+      "headers": [
+        { ":authority": "twitter.com" }
+      ],
+      "encoded": [ "" ]
+    }, {
+      "headers": [
+        { ":authority": "twitter.com" },
+        { ":authority": "twitter.com" }
+      ],
+      "encoded": [ "81818181" ]
+    }, {
+      "headers": [
+      ],
+      "encoded": [ "81" ]
+    }, {
+      "headers": [
+        { "name": "value" }
+      ],
+      "encoded": [ "00046e616d650576616c7565" ]
+    }, {
+      "headers": [
+        { "name": "value" }
+      ],
+      "encoded": [ "" ]
+    }, {
+      "headers": [
+        { "name": "value" },
+        { "name": "value" }
+      ],
+      "encoded": [ "81818181" ]
+    }, {
+      "headers": [
+        { "name": "" }
+      ],
+      "encoded": [ "010082" ]
+    }
+  ]
+}
