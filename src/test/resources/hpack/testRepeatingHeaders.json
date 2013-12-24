@@ -1,0 +1,58 @@
+{
+  "context": "request",
+  "header_blocks":
+  [
+    {
+      "headers": [
+        { ":path": "/testpath" },
+        { "x-custom": "abc" },
+        { "x-custom": "def" },
+        { "x-custom": "ghi" },
+        { "x-custom": "jkl" },
+        { "x-custom": "mno" }
+      ],
+      "encoded": [
+        "0486088c22e4473f0086f3953ac22dd38245e90182c071010367686901036a6b6c0182",
+        "d18d" ]
+    },
+    {
+      "headers": [
+        { ":path": "/testpath" },
+        { "x-custom": "mno" },
+        { "x-custom": "jkl" },
+        { "x-custom": "ghi" },
+        { "x-custom": "def" },
+        { "x-custom": "abc" }
+      ],
+      "encoded": [ ]
+    },
+    {
+      "headers": [
+        { ":path": "/" }
+      ],
+      "encoded": [ "8a828384858687" ]
+    },
+    {
+      "headers": [
+        { ":path": "/testpath" },
+        { "x-custom": "mno" },
+        { "x-custom": "jkl" },
+        { "x-custom": "ghi" },
+        { "x-custom": "def" },
+        { "x-custom": "abc" }
+      ],
+      "encoded": [ "87828384858681" ]
+    },
+    {
+      "headers": [
+        { ":path": "/testpath" },
+        { "x-custom": "mno" },
+        { "x-custom": "jkl" },
+        { "x-custom": "ghi" },
+        { "x-custom": "def" },
+        { "x-custom": "abc" }
+      ],
+      "encoded": [ ]
+    }
+  ]
+}

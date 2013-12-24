@@ -1,0 +1,55 @@
+{
+  "context": "request",
+  "force_huffman_on": true,
+  "header_blocks":
+  [
+    {
+      "headers": [
+        { ":method": "GET" },
+        { ":scheme": "http" },
+        { ":host": "baidu.com"},
+        { ":path": "/" },
+        { "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0" },
+        { "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" },
+        { "accept-language": "en-US,en;q=0.5" },
+        { "accept-encoding": "gzip, deflate" },
+        { "connection": "keep-alive" }
+      ],
+      "encoded": [ 
+        "82870084f666d84787bd0ac35225ba7f873dbeef6faa96b405042f47faef4254c8b619",
+        "f5747c19115f477a13d1f4f0e8fdf418a4afaba1fcfd86a485ff7d1ee14f2681ca6294",
+        "c53747053c716f981a921717af88f9c4338e8be9439cb5251153581e79c745ffcf3d17",
+        "d287396a4a22a6b03cf45f5795a5259d3fd07f5d5e569495ff168b164bf8f0e9167579",
+        "5a5251168acbd54ee9e8c0715a223f00874b58c14c54d67f87e422e950b5731f" 
+      ]
+    }, 
+    {
+      "headers": [
+        { ":method": "GET" },
+        { ":scheme": "http" },
+        { ":host": "baidu.com" },
+        { ":path": "/favicon.ico" },
+        { "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0" },
+        { "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" },
+        { "accept-language": "en-US,en;q=0.5" },
+        { "accept-encoding": "gzip, deflate" },
+        { "connection": "keep-alive" }
+      ],
+      "encoded": [ "06880c51cd496b08a4b787" ]      
+    }, 
+    {
+      "headers": [
+        { ":method": "GET" },
+        { ":scheme": "http" },
+        { ":host": "www.baidu.com" },
+        { ":path": "/" },
+        { "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0" },
+        { "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" },
+        { "accept-language": "en-US,en;q=0.5" },
+        { "accept-encoding": "gzip, deflate" },
+        { "connection": "keep-alive" }
+      ],
+      "encoded": [ "0889db6d897a1586a44b74888289" ]      
+    }
+  ]
+}

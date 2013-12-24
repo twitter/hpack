@@ -1,0 +1,33 @@
+{
+  "context": "request",
+  "force_huffman_on": true,
+  "header_blocks":
+  [
+    {
+      "headers": [
+        { ":method": "GET" },
+        { ":scheme": "http" },
+        { ":host": "yahoo.co.jp" },
+        { ":path": "/" }
+      ],
+      "encoded": [ "82870084f666d84788f4466d6912d2717787" ]
+        
+    }, {
+      "headers": [
+        { ":method": "GET" },
+        { ":scheme": "http" },
+        { ":host": "www.yahoo.co.jp" },
+        { ":path": "/" }
+      ],
+      "encoded": [ "028bdb6d89e88cdad225a4e2ef83" ]
+    }, {
+      "headers": [
+        { ":method": "GET" },
+        { ":scheme": "http" },
+        { ":host": "k.yimg.jp" },
+        { ":path": "/images/top/sp2/cmn/logo-ns-130528.png" }
+      ],
+      "encoded": [ "0187e44f45699138bb039905688c860116b820e38274602db9365642534c5a0f591cccbf8384" ]
+    }
+  ]
+}

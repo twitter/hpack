@@ -13,13 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**
+ * <a href="http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-05">
+ * HPACK: HTTP/2.0 Header Compression</a>
+ */
 package com.twitter.hpack;
-
-public interface HeaderListener {
-
-  /**
-   * emitHeader is called by the decoder during header field emission.
-   * The name and value byte arrays must not be modified.
-   */
-  public void emitHeader(byte[] name, byte[] value);
-}

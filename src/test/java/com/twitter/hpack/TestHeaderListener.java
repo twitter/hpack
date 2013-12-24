@@ -15,11 +15,18 @@
  */
 package com.twitter.hpack;
 
-public interface HeaderListener {
+import java.util.List;
 
-  /**
-   * emitHeader is called by the decoder during header field emission.
-   * The name and value byte arrays must not be modified.
-   */
-  public void emitHeader(byte[] name, byte[] value);
+final class TestHeaderListener implements HeaderListener {
+
+  private final List<HeaderField> headers;
+
+  TestHeaderListener(List<HeaderField> headers) {
+    this.headers = headers;
+  }
+
+  @Override
+  public void emitHeader(byte[] name, byte[] value) {
+    headers.add(new HeaderField(name, value));
+  }
 }

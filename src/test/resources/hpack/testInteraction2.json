@@ -1,0 +1,33 @@
+{
+  "context": "request",
+  "force_huffman_on": true,
+  "header_blocks":
+  [
+    {
+      "headers": [
+        { ":scheme": "https" },
+        { ":host": "example.com" },
+        { ":path": "/" },
+        { ":method": "GET" },
+        { "user-agent": "hpack-test" },
+        { "cookie": "xxxxxxx1" },
+        { "x-hello": "world" }
+      ],
+      "encoded": [ 
+        "870084f666d847881f3468e58912dd3f86853d87cdc84f2962308f2488f3f3f3f3f3f3",
+        "f3370085f397315adb84d9af5e1f" 
+      ]        
+    }, {
+      "headers": [
+        { ":scheme": "https" },
+        { ":host": "example.com" },
+        { ":path": "/" },
+        { ":method": "GET" },
+        { "user-agent": "hpack-test" },
+        { "cookie": "xxxxxxx2" }
+      ],
+      "encoded": [ "0288f3f3f3f3f3f3f33f8283" ]      
+    }
+  ]
+}
+

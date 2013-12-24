@@ -1,0 +1,36 @@
+{
+  "context": "request",
+  "use_indexing": false,
+  "force_huffman_off": true,
+  "header_blocks":
+  [
+    {
+      "headers": [
+        { ":authority": "twitter.com" }
+      ],
+      "encoded": [ "410B747769747465722e636f6d" ]
+    }, {
+      "headers": [
+      ],
+      "encoded": [ "" ]
+    }, {
+      "headers": [
+        { "name": "value" }
+      ],
+      "encoded": [ "40046e616d650576616c7565" ]
+    }, {
+      "headers": [
+      ],
+      "encoded": [ "" ]
+    }, {
+      "headers": [
+        { "name": "" }
+      ],
+      "encoded": [ "40046e616d6500" ]
+    }, {
+      "headers": [
+      ],
+      "encoded": [ "" ]
+    }
+  ]
+}
