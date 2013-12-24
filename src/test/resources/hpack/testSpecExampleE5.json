@@ -1,0 +1,62 @@
+{
+  "maxHeaderSize": "256",
+  "context": "response",
+  "forceHuffmanOn": "true",
+  "headerBlocks":
+  [
+    {
+      "headers": [
+        { ":status": "302" },
+        { "cache-control": "private" },
+        { "date": "Mon, 21 Oct 2013 20:13:21 GMT" },
+        { "location": "https://www.example.com" }
+      ],
+      "encoded": [ 
+        "0882 409f 1886 c31b 39bf 387f 2292 a2fb",
+        "a203 20f2 ab30 3124 018b 490d 3209 e877",
+        "3093 e39e 7864 dd7a fd3d 3d24 8747 db87",
+        "2849 55f6 ff"
+      ]
+    }, 
+    {
+      "headers": [
+        { ":status": "200" },
+        { "date": "Mon, 21 Oct 2013 20:13:21 GMT" },
+        { "cache-control": "private" },
+        { "location": "https://www.example.com" }
+      ],
+      "comment": [
+        "this differs slightly from the encoding in the spec.  No index is sent to evict entry # 4 ",
+        "(:status: 200).  It should not be necessary since the header table on both sides should be in sync and the",
+        "eviction should happen automatically."
+      ], 
+      "encoded": [ 
+        "8c"
+      ]
+    }, 
+    {
+      "headers": [
+        { ":status": "200" },
+        { "cache-control": "private" },
+        { "date": "Mon, 21 Oct 2013 20:13:22 GMT" },
+        { "location": "https://www.example.com" },
+        { "content-encoding": "gzip" },
+        { "set-cookie": "foo=ASDJKHQKBZXOQWEOPIUAXQWEOIU; max-age=3600; version=1" }
+      ],
+      "comment": [ 
+        "This differs slightly from the encoded for in the spec.  In particular, the spec removes the date from the ",
+        "beginning of the reference set at the beginning of the response.  This compressor operates in a streaming ",
+        "mode and does not precompute the removed entries.  Instead, the date is removed from the reference set at ",
+        "the point where it is evicted from the header table.  The result is the same."
+      ],
+      "encoded": [ 
+        "84 8403 92a2 fba2 0320 f2ab 3031 2401",
+        "8b49 0d33 09e8 771d 84e1 fbb3 0f84 8483",
+        "833a b3df 7dfb 36d3 d9e1 fcfc 3faf e7ab",
+        "fcfe fcbf af3e df2f 977f d36f f7fd 79f6",
+        "f977 fd3d e16b fa46 fe10 d889 447d e1ce",
+        "18e5 65f7 6c2f"
+     ]
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "maxHeaderSize": "8192",
+  "context": "request",
+  "forceHuffmanOff": "true",
+  "headerBlocks":
+  [
+    {
+      "headers": [
+        { ":method": "GET" }
+      ],
+      "encoded": [ 
+        "82"
+      ]       
+    }
+  ]
+}

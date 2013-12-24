@@ -1,0 +1,41 @@
+{
+  "context": "request",
+  "forceHuffmanOn": "true",
+  "headerBlocks":
+  [
+    {
+      "headers": [
+        { ":path": "/testpath" },
+        { "foo": "bar1" },
+        { "Foo": "bar2" },
+        { "FOO": "bar3" }
+      ],
+      "encoded": [ "0486088c22e4473f0082c5ad83bd0f370183bd0f3f0183bd0f9b" ]
+    },
+    {
+      "headers": [
+        { ":path": "/testpath" },
+        { "Foo": "bar2" }
+      ],
+      "encoded": [ "8183" ]
+    },
+    {
+      "headers": [
+        { ":path": "/testpath" },
+        { "foo": "bar1" },
+        { "FOO": "bar3" },
+        { "Foo": "bar2" }
+      ],
+      "encoded": [ "8381" ]
+    },
+    {
+      "headers": [
+        { ":path": "/testpath" },
+        { "FOO": "bar3" },
+        { "foo": "bar2" },
+        { "Foo": "bar1" }
+      ],
+      "encoded": [ ]
+    }
+  ]
+}

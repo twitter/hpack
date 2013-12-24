@@ -59,7 +59,7 @@ public class DecompressionTest {
   @Test
   public void testIndexedRepresentation() throws IOException {
     // Verify header is emitted when added to reference set
-    decode("80");
+    decode("86");
     assertEquals(1, headers.names().size());
     assertEquals(1, headers.getAll(":scheme").size());
     assertEquals("http", headers.get(":scheme"));
@@ -80,7 +80,7 @@ public class DecompressionTest {
     // Verify header is removed from the reference set
     headers.clear();
     assertEquals(0, headers.names().size());
-    decode("80");
+    decode("81");
     assertEquals(0, headers.names().size());
     assertFalse(decompressor.endHeaderBlock(headers));
     assertEquals(0, headers.names().size());
@@ -89,7 +89,7 @@ public class DecompressionTest {
   @Test
   public void testIndexToggled() throws IOException {
     // Verify header is emitted when added to reference set
-    decode("80");
+    decode("86");
     assertEquals(1, headers.names().size());
     assertEquals(1, headers.getAll(":scheme").size());
     assertEquals("http", headers.get(":scheme"));
@@ -99,7 +99,7 @@ public class DecompressionTest {
     assertEquals(0, headers.names().size());
 
     // Remove header from the reference set
-    decode("80");
+    decode("81");
     assertEquals(0, headers.names().size());
     assertFalse(decompressor.endHeaderBlock(headers));
     assertEquals(0, headers.names().size());
@@ -113,18 +113,18 @@ public class DecompressionTest {
   @Test
   public void testIndexEmittedAgain() throws IOException {
     // Verify header is emitted when added to reference set
-    decode("80");
+    decode("86");
     assertEquals(1, headers.names().size());
     assertEquals(1, headers.getAll(":scheme").size());
     assertEquals("http", headers.get(":scheme"));
 
     // Remove header from the reference set
-    decode("80");
+    decode("81");
     assertEquals(1, headers.names().size());
     assertEquals(1, headers.getAll(":scheme").size());
 
     // Verify header is re-emitted when re-added to reference set
-    decode("80");
+    decode("81");
     assertEquals(1, headers.names().size());
     List<String> values = headers.getAll(":scheme");
     assertEquals(2, values.size());
@@ -164,15 +164,15 @@ public class DecompressionTest {
   @Test
   public void testLiteralWithoutIndexingWithIndexedName() throws Exception {
     // Verify indexed host header
-    decode("630B" + hex("twitter.com"));
+    decode("410B" + hex("twitter.com"));
     assertEquals(1, headers.names().size());
-    assertEquals(1, headers.getAll(":host").size());
-    assertEquals("twitter.com", headers.get(":host"));
+    assertEquals(1, headers.getAll(":authority").size());
+    assertEquals("twitter.com", headers.get(":authority"));
 
     assertFalse(decompressor.endHeaderBlock(headers));
     assertEquals(1, headers.names().size());
-    assertEquals(1, headers.getAll(":host").size());
-    assertEquals("twitter.com", headers.get(":host"));
+    assertEquals(1, headers.getAll(":authority").size());
+    assertEquals("twitter.com", headers.get(":authority"));
 
     // Verify header is not added to the reference set
     headers.clear();
@@ -184,7 +184,7 @@ public class DecompressionTest {
   @Test
   public void testLiteralWithoutIndexingWithNewName() throws Exception {
     // Verify new header name
-    decode("6004" + hex("name") + "05" + hex("value"));
+    decode("4004" + hex("name") + "05" + hex("value"));
     assertEquals(1, headers.names().size());
     assertEquals(1, headers.getAll("name").size());
     assertEquals("value", headers.get("name"));
@@ -203,13 +203,13 @@ public class DecompressionTest {
 
   @Test(expected = IOException.class)
   public void testLiteralWithoutIndexingWithEmptyName() throws Exception {
-    decode("600005" + hex("value"));
+    decode("400005" + hex("value"));
   }
 
   @Test
   public void testLiteralWithoutIndexingWithEmptyValue() throws Exception {
     // Verify new header name
-    decode("6004" + hex("name") + "00");
+    decode("4004" + hex("name") + "00");
     assertEquals(1, headers.names().size());
     assertEquals(1, headers.getAll("name").size());
     assertEquals("", headers.get("name"));
@@ -230,9 +230,9 @@ public class DecompressionTest {
   public void testLiteralWithoutIndexingWithLargeName() throws Exception {
     // Ignore header name that exceeds max header size
     StringBuilder sb = new StringBuilder();
-    sb.append("608060");
-    for (int i = 0; i < 8192; i++) {
-      sb.append("61"); // "a"
+    sb.append("407F817F");
+    for (int i = 0; i < 16384; i++) {
+      sb.append("61"); // 'a'
     }
     sb.append("00");
     decode(sb.toString());
@@ -243,7 +243,7 @@ public class DecompressionTest {
     assertEquals(0, headers.names().size());
 
     // Verify table is unmodified
-    decode("80");
+    decode("86");
     assertEquals(1, headers.names().size());
     assertEquals(1, headers.getAll(":scheme").size());
     assertEquals("http", headers.get(":scheme"));
@@ -251,13 +251,13 @@ public class DecompressionTest {
 
   @Test
   public void testLiteralWithoutIndexingWithLargeValue() throws Exception {
-    // Ignore header name that exceeds max header size
+    // Ignore header that exceeds max header size
     StringBuilder sb = new StringBuilder();
-    sb.append("6004");
+    sb.append("4004");
     sb.append(hex("name"));
-    sb.append("8060");
+    sb.append("7F813F");
     for (int i = 0; i < 8192; i++) {
-      sb.append("61"); // "a"
+      sb.append("61"); // 'a'
     }
     decode(sb.toString());
     assertEquals(0, headers.names().size());
@@ -267,7 +267,7 @@ public class DecompressionTest {
     assertEquals(0, headers.names().size());
 
     // Verify table is unmodified
-    decode("80");
+    decode("86");
     assertEquals(1, headers.names().size());
     assertEquals(1, headers.getAll(":scheme").size());
     assertEquals("http", headers.get(":scheme"));
@@ -276,36 +276,36 @@ public class DecompressionTest {
   @Test
   public void testLiteralWithIncrementalIndexingWithIndexedName() throws Exception {
     // Verify indexed host header
-    decode("430B" + hex("twitter.com"));
+    decode("010B" + hex("twitter.com"));
     assertEquals(1, headers.names().size());
-    assertEquals(1, headers.getAll(":host").size());
-    assertEquals("twitter.com", headers.get(":host"));
+    assertEquals(1, headers.getAll(":authority").size());
+    assertEquals("twitter.com", headers.get(":authority"));
 
     assertFalse(decompressor.endHeaderBlock(headers));
     assertEquals(1, headers.names().size());
-    assertEquals(1, headers.getAll(":host").size());
-    assertEquals("twitter.com", headers.get(":host"));
+    assertEquals(1, headers.getAll(":authority").size());
+    assertEquals("twitter.com", headers.get(":authority"));
 
     // Verify header is added to the reference set
     headers.clear();
     assertEquals(0, headers.names().size());
     assertFalse(decompressor.endHeaderBlock(headers));
     assertEquals(1, headers.names().size());
-    assertEquals(1, headers.getAll(":host").size());
-    assertEquals("twitter.com", headers.get(":host"));
+    assertEquals(1, headers.getAll(":authority").size());
+    assertEquals("twitter.com", headers.get(":authority"));
 
     // Verify header was insert at new index
     headers.clear();
     assertEquals(0, headers.names().size());
-    decode("9E9E9E"); // remove, insert and emit, remove
+    decode("818181"); // remove, insert and emit, remove
     assertEquals(1, headers.names().size());
-    assertEquals(1, headers.getAll(":host").size());
-    assertEquals("twitter.com", headers.get(":host"));
+    assertEquals(1, headers.getAll(":authority").size());
+    assertEquals("twitter.com", headers.get(":authority"));
 
     assertFalse(decompressor.endHeaderBlock(headers));
     assertEquals(1, headers.names().size());
-    assertEquals(1, headers.getAll(":host").size());
-    assertEquals("twitter.com", headers.get(":host"));
+    assertEquals(1, headers.getAll(":authority").size());
+    assertEquals("twitter.com", headers.get(":authority"));
 
     // Verify header is removed from the reference set
     headers.clear();
@@ -317,7 +317,7 @@ public class DecompressionTest {
   @Test
   public void testLiteralWithIncrementalIndexingWithNewName() throws Exception {
     // Verify indexed host header
-    decode("4004" + hex("name") + "05" + hex("value"));
+    decode("0004" + hex("name") + "05" + hex("value"));
     assertEquals(1, headers.names().size());
     assertEquals(1, headers.getAll("name").size());
     assertEquals("value", headers.get("name"));
@@ -338,7 +338,7 @@ public class DecompressionTest {
     // Verify header was insert at new index
     headers.clear();
     assertEquals(0, headers.names().size());
-    decode("9E9E9E"); // remove, insert and emit, remove
+    decode("818181"); // remove, insert and emit, remove
     assertEquals(1, headers.names().size());
     assertEquals(1, headers.getAll("name").size());
     assertEquals("value", headers.get("name"));
@@ -357,73 +357,105 @@ public class DecompressionTest {
 
   @Test(expected = IOException.class)
   public void testLiteralWithIncrementalIndexingWithEmptyName() throws Exception {
-    decode("400005" + hex("value"));
+    decode("000005" + hex("value"));
   }
 
   @Test
   public void testLiteralWithIncrementalIndexingMultipleEviction() throws Exception {
-    // Evicting first 5 elements requires 3004 bytes
+    // Verify indexed host header
+    decode("0005" + hex("name1") + "06" + hex("value1"));
+    decode("0005" + hex("name2") + "06" + hex("value2"));
+    decode("0005" + hex("name3") + "06" + hex("value3"));
+    assertEquals(3, headers.names().size());
+    assertEquals(1, headers.getAll("name1").size());
+    assertEquals("value1", headers.get("name1"));
+    assertEquals(1, headers.getAll("name2").size());
+    assertEquals("value2", headers.get("name2"));
+    assertEquals(1, headers.getAll("name3").size());
+    assertEquals("value3", headers.get("name3"));
+
+    assertFalse(decompressor.endHeaderBlock(headers));
+    assertEquals(3, headers.names().size());
+    assertEquals(1, headers.getAll("name1").size());
+    assertEquals("value1", headers.get("name1"));
+    assertEquals(1, headers.getAll("name2").size());
+    assertEquals("value2", headers.get("name2"));
+    assertEquals(1, headers.getAll("name3").size());
+    assertEquals("value3", headers.get("name3"));
+
+    // Verify headers are added to the reference set
+    headers.clear();
+    assertEquals(0, headers.names().size());
+    assertFalse(decompressor.endHeaderBlock(headers));
+    assertEquals(3, headers.names().size());
+    assertEquals(1, headers.getAll("name1").size());
+    assertEquals("value1", headers.get("name1"));
+    assertEquals(1, headers.getAll("name2").size());
+    assertEquals("value2", headers.get("name2"));
+    assertEquals(1, headers.getAll("name3").size());
+    assertEquals("value3", headers.get("name3"));
+
+    // Evicting last 2 elements requires 3979 bytes
+    headers.clear();
     StringBuilder sb = new StringBuilder();
-    sb.append("43B817");
-    for (int i = 0; i < 3000; i++) {
-      sb.append("61"); // "a"
+    sb.append("0004");
+    sb.append(hex("name"));
+    sb.append("7F881E");
+    for (int i = 0; i < 3975; i++) {
+      sb.append("61"); // 'a'
     }
     decode(sb.toString());
     assertEquals(1, headers.names().size());
-    assertEquals(1, headers.getAll(":host").size());
-    assertEquals(3000, headers.get(":host").length());
+    assertEquals(1, headers.getAll("name").size());
+    assertEquals(3975, headers.get("name").length());
+
+    // Verify 2 elements were evicted from the index
+    assertFalse(decompressor.endHeaderBlock(headers));
+    assertEquals(2, headers.names().size());
+    assertEquals(1, headers.getAll("name").size());
+    assertEquals(3975, headers.get("name").length());
+    assertEquals(1, headers.getAll("name3").size());
+    assertEquals("value3", headers.get("name3"));
+  }
+
+  @Test
+  public void testLiteralWithIncrementalIndexingCompleteEviction() throws Exception {
+    // Verify indexed host header
+    decode("0004" + hex("name") + "05" + hex("value"));
+    assertEquals(1, headers.names().size());
+    assertEquals(1, headers.getAll("name").size());
+    assertEquals("value", headers.get("name"));
 
     assertFalse(decompressor.endHeaderBlock(headers));
     assertEquals(1, headers.names().size());
-    assertEquals(1, headers.getAll(":host").size());
-    assertEquals(3000, headers.get(":host").length());
+    assertEquals(1, headers.getAll("name").size());
+    assertEquals("value", headers.get("name"));
 
     // Verify header is added to the reference set
     headers.clear();
     assertEquals(0, headers.names().size());
     assertFalse(decompressor.endHeaderBlock(headers));
     assertEquals(1, headers.names().size());
-    assertEquals(1, headers.getAll(":host").size());
-    assertEquals(3000, headers.get(":host").length());
+    assertEquals(1, headers.getAll("name").size());
+    assertEquals("value", headers.get("name"));
 
-    // Verify 5 elements were evicted from the index
     headers.clear();
-    assertEquals(0, headers.names().size());
-    decode("999999"); // remove, insert and emit, remove
-    assertEquals(1, headers.names().size());
-    assertEquals(1, headers.getAll(":host").size());
-    assertEquals(3000, headers.get(":host").length());
-
-    assertFalse(decompressor.endHeaderBlock(headers));
-    assertEquals(1, headers.names().size());
-    assertEquals(1, headers.getAll(":host").size());
-    assertEquals(3000, headers.get(":host").length());
-
-    // Verify header is removed from the reference set
-    headers.clear();
-    assertEquals(0, headers.names().size());
-    assertFalse(decompressor.endHeaderBlock(headers));
-    assertEquals(0, headers.names().size());
-  }
-
-  @Test
-  public void testLiteralWithIncrementalIndexingCompleteEviction() throws Exception {
     StringBuilder sb = new StringBuilder();
-    sb.append("438020");
+    sb.append("027F811F");
     for (int i = 0; i < 4096; i++) {
-      sb.append("61"); // "a"
+      sb.append("61"); // 'a'
     }
     decode(sb.toString());
     assertEquals(1, headers.names().size());
-    assertEquals(1, headers.getAll(":host").size());
-    assertEquals(4096, headers.get(":host").length());
+    assertEquals(1, headers.getAll(":authority").size());
+    assertEquals(4096, headers.get(":authority").length());
 
     assertFalse(decompressor.endHeaderBlock(headers));
     assertEquals(1, headers.names().size());
-    assertEquals(1, headers.getAll(":host").size());
-    assertEquals(4096, headers.get(":host").length());
+    assertEquals(1, headers.getAll(":authority").size());
+    assertEquals(4096, headers.get(":authority").length());
 
-    // Verify header has been evicted from table
+    // Verify all headers has been evicted from table
     headers.clear();
     assertEquals(0, headers.names().size());
     assertFalse(decompressor.endHeaderBlock(headers));
@@ -433,7 +465,7 @@ public class DecompressionTest {
     headers.clear();
     assertEquals(0, headers.names().size());
     // remove from reference set, insert into reference set and emit
-    decode("4004" + hex("name") + "05" + hex("value") + "8080");
+    decode("0004" + hex("name") + "05" + hex("value") + "8181");
     assertEquals(1, headers.names().size());
     List<String> values = headers.getAll("name");
     assertEquals(2, values.size());
@@ -446,9 +478,9 @@ public class DecompressionTest {
   public void testLiteralWithIncrementalIndexingWithLargeName() throws Exception {
     // Ignore header name that exceeds max header size
     StringBuilder sb = new StringBuilder();
-    sb.append("408060");
-    for (int i = 0; i < 8192; i++) {
-      sb.append("61"); // "a"
+    sb.append("007F817F");
+    for (int i = 0; i < 16384; i++) {
+      sb.append("61"); // 'a'
     }
     sb.append("00");
     decode(sb.toString());
@@ -462,7 +494,7 @@ public class DecompressionTest {
     headers.clear();
     assertEquals(0, headers.names().size());
     // remove from reference set, insert into reference set and emit
-    decode("4004" + hex("name") + "05" + hex("value") + "8080");
+    decode("0004" + hex("name") + "05" + hex("value") + "8181");
     assertEquals(1, headers.names().size());
     List<String> values = headers.getAll("name");
     assertEquals(2, values.size());
@@ -473,296 +505,13 @@ public class DecompressionTest {
 
   @Test
   public void testLiteralWithIncrementalIndexingWithLargeValue() throws Exception {
-    // Ignore header name that exceeds max header size
-    StringBuilder sb = new StringBuilder();
-    sb.append("4004");
-    sb.append(hex("name"));
-    sb.append("8060");
-    for (int i = 0; i < 8192; i++) {
-      sb.append("61"); // "a"
-    }
-    decode(sb.toString());
-    assertEquals(0, headers.names().size());
-
-    // Verify header block is reported as truncated
-    assertTrue(decompressor.endHeaderBlock(headers));
-    assertEquals(0, headers.names().size());
-
-    // Verify next header is inserted at index 0
-    headers.clear();
-    assertEquals(0, headers.names().size());
-    // remove from reference set, insert into reference set and emit
-    decode("4004" + hex("name") + "05" + hex("value") + "8080");
-    assertEquals(1, headers.names().size());
-    List<String> values = headers.getAll("name");
-    assertEquals(2, values.size());
-    for (String value : values) {
-      assertEquals("value", value);
-    }
-  }
-
-  @Test
-  public void testLiteralWithSubstitutionIndexingWithIndexedName() throws Exception {
-    // Verify indexed host header
-    decode("03000B" + hex("twitter.com"));
-    assertEquals(1, headers.names().size());
-    assertEquals(1, headers.getAll(":host").size());
-    assertEquals("twitter.com", headers.get(":host"));
-
-    assertFalse(decompressor.endHeaderBlock(headers));
-    assertEquals(1, headers.names().size());
-    assertEquals(1, headers.getAll(":host").size());
-    assertEquals("twitter.com", headers.get(":host"));
-
-    // Verify header is added to the reference set
-    headers.clear();
-    assertEquals(0, headers.names().size());
-    assertFalse(decompressor.endHeaderBlock(headers));
-    assertEquals(1, headers.names().size());
-    assertEquals(1, headers.getAll(":host").size());
-    assertEquals("twitter.com", headers.get(":host"));
-
-    // Verify header was insert at substituted index
-    headers.clear();
-    assertEquals(0, headers.names().size());
-    decode("808080"); // remove, insert and emit, remove
-    assertEquals(1, headers.names().size());
-    assertEquals(1, headers.getAll(":host").size());
-    assertEquals("twitter.com", headers.get(":host"));
-
-    assertFalse(decompressor.endHeaderBlock(headers));
-    assertEquals(1, headers.names().size());
-    assertEquals(1, headers.getAll(":host").size());
-    assertEquals("twitter.com", headers.get(":host"));
-
-    // Verify header is removed from the reference set
-    headers.clear();
-    assertEquals(0, headers.names().size());
-    assertFalse(decompressor.endHeaderBlock(headers));
-    assertEquals(0, headers.names().size());
-  }
-
-  @Test
-  public void testLiteralWithSubstitutionIndexingWithNewName() throws Exception {
-    // Verify indexed host header
-    decode("0004" + hex("name") + "0005" + hex("value"));
-    assertEquals(1, headers.names().size());
-    assertEquals(1, headers.getAll("name").size());
-    assertEquals("value", headers.get("name"));
-
-    assertFalse(decompressor.endHeaderBlock(headers));
-    assertEquals(1, headers.names().size());
-    assertEquals(1, headers.getAll("name").size());
-    assertEquals("value", headers.get("name"));
-
-    // Verify header is added to the reference set
-    headers.clear();
-    assertEquals(0, headers.names().size());
-    assertFalse(decompressor.endHeaderBlock(headers));
-    assertEquals(1, headers.names().size());
-    assertEquals(1, headers.getAll("name").size());
-    assertEquals("value", headers.get("name"));
-
-    // Verify header was insert at substituted index
-    headers.clear();
-    assertEquals(0, headers.names().size());
-    decode("808080"); // remove, insert and emit, remove
-    assertEquals(1, headers.names().size());
-    assertEquals(1, headers.getAll("name").size());
-    assertEquals("value", headers.get("name"));
-
-    assertFalse(decompressor.endHeaderBlock(headers));
-    assertEquals(1, headers.names().size());
-    assertEquals(1, headers.getAll("name").size());
-    assertEquals("value", headers.get("name"));
-
-    // Verify header is removed from the reference set
-    headers.clear();
-    assertEquals(0, headers.names().size());
-    assertFalse(decompressor.endHeaderBlock(headers));
-    assertEquals(0, headers.names().size());
-  }
-
-  @Test(expected = IOException.class)
-  public void testLiteralWithSubstitutionIndexingWithEmptyName() throws Exception {
-    decode("00000005" + hex("value"));
-  }
-
-  @Test(expected = IOException.class)
-  public void testIllegalSubstitutionIndex() throws IOException {
-    // Substitution index larger than the header table
-    decode("03FF000B" + hex("twitter.com"));
-  }
-
-  @Test(expected = IOException.class)
-  public void testInsidiousSubstitutionIndex() throws IOException {
-    // Insidious substitution index so the last shift causes sign overflow
-    decode("03FF80808080080B" + hex("twitter.com"));
-  }
-
-  @Test
-  public void testLiteralWithSubstitutionIndexingMultipleEviction() throws Exception {
-    // Evicting first 5 elements requires 3004 bytes
-    StringBuilder sb = new StringBuilder();
-    sb.append("0305B817");
-    for (int i = 0; i < 3000; i++) {
-      sb.append("61"); // "a"
-    }
-    decode(sb.toString());
-    assertEquals(1, headers.names().size());
-    assertEquals(1, headers.getAll(":host").size());
-    assertEquals(3000, headers.get(":host").length());
-
-    assertFalse(decompressor.endHeaderBlock(headers));
-    assertEquals(1, headers.names().size());
-    assertEquals(1, headers.getAll(":host").size());
-    assertEquals(3000, headers.get(":host").length());
-
-    // Verify header is added to the reference set
-    headers.clear();
-    assertEquals(0, headers.names().size());
-    assertFalse(decompressor.endHeaderBlock(headers));
-    assertEquals(1, headers.names().size());
-    assertEquals(1, headers.getAll(":host").size());
-    assertEquals(3000, headers.get(":host").length());
-
-    // Verify 5 elements were evicted from the index
-    headers.clear();
-    assertEquals(0, headers.names().size());
-    decode("808080"); // remove, insert and emit, remove
-    assertEquals(1, headers.names().size());
-    assertEquals(1, headers.getAll(":host").size());
-    assertEquals(3000, headers.get(":host").length());
-
-    assertFalse(decompressor.endHeaderBlock(headers));
-    assertEquals(1, headers.names().size());
-    assertEquals(1, headers.getAll(":host").size());
-    assertEquals(3000, headers.get(":host").length());
-
-    // Verify header is removed from the reference set
-    headers.clear();
-    assertEquals(0, headers.names().size());
-    assertFalse(decompressor.endHeaderBlock(headers));
-    assertEquals(0, headers.names().size());
-  }
-
-  @Test
-  public void testLiteralWithSubstitutionIndexingSubstitutedElementEviction() throws Exception {
-    // Evicting first 5 elements requires 3004 bytes
-    StringBuilder sb = new StringBuilder();
-    sb.append("0300B817");
-    for (int i = 0; i < 3000; i++) {
-      sb.append("61"); // "a"
-    }
-    decode(sb.toString());
-    assertEquals(1, headers.names().size());
-    assertEquals(1, headers.getAll(":host").size());
-    assertEquals(3000, headers.get(":host").length());
-
-    assertFalse(decompressor.endHeaderBlock(headers));
-    assertEquals(1, headers.names().size());
-    assertEquals(1, headers.getAll(":host").size());
-    assertEquals(3000, headers.get(":host").length());
-
-    // Verify header is added to the reference set
-    headers.clear();
-    assertEquals(0, headers.names().size());
-    assertFalse(decompressor.endHeaderBlock(headers));
-    assertEquals(1, headers.names().size());
-    assertEquals(1, headers.getAll(":host").size());
-    assertEquals(3000, headers.get(":host").length());
-
-    // Verify 5 elements were evicted from the index
-    headers.clear();
-    assertEquals(0, headers.names().size());
-    decode("808181"); // remove, insert and emit, remove
-    assertEquals(1, headers.names().size());
-    assertTrue(headers.names().contains("accept"));
-
-    assertFalse(decompressor.endHeaderBlock(headers));
-    assertEquals(1, headers.names().size());
-    assertTrue(headers.names().contains("accept"));
-
-    // Verify header is removed from the reference set
-    headers.clear();
-    assertEquals(0, headers.names().size());
-    assertFalse(decompressor.endHeaderBlock(headers));
-    assertEquals(0, headers.names().size());
-  }
-
-  @Test
-  public void testLiteralWithSubstitutionIndexingCompleteEviction() throws Exception {
-    StringBuilder sb = new StringBuilder();
-    sb.append("03008020");
-    for (int i = 0; i < 4096; i++) {
-      sb.append("61"); // "a"
-    }
-    decode(sb.toString());
-    assertEquals(1, headers.names().size());
-    assertEquals(1, headers.getAll(":host").size());
-    assertEquals(4096, headers.get(":host").length());
-
-    assertFalse(decompressor.endHeaderBlock(headers));
-    assertEquals(1, headers.names().size());
-    assertEquals(1, headers.getAll(":host").size());
-    assertEquals(4096, headers.get(":host").length());
-
-    // Verify header has been evicted from table
-    headers.clear();
-    assertEquals(0, headers.names().size());
-    assertFalse(decompressor.endHeaderBlock(headers));
-    assertEquals(0, headers.names().size());
-
-    // Verify next header is inserted at index 0
-    headers.clear();
-    assertEquals(0, headers.names().size());
-    // remove from reference set, insert into reference set and emit
-    decode("4004" + hex("name") + "05" + hex("value") + "8080");
-    assertEquals(1, headers.names().size());
-    List<String> values = headers.getAll("name");
-    assertEquals(2, values.size());
-    for (String value : values) {
-      assertEquals("value", value);
-    }
-  }
-
-  @Test
-  public void testLiteralWithSubstitutionIndexingWithLargeName() throws Exception {
-    // Ignore header name that exceeds max header size
-    StringBuilder sb = new StringBuilder();
-    sb.append("008060");
-    for (int i = 0; i < 8192; i++) {
-      sb.append("61"); // "a"
-    }
-    sb.append("0000");
-    decode(sb.toString());
-
-    // Verify header block is reported as truncated
-    assertTrue(decompressor.endHeaderBlock(headers));
-    assertEquals(0, headers.names().size());
-
-    // Verify next header is inserted at index 0
-    headers.clear();
-    assertEquals(0, headers.names().size());
-    // remove from reference set, insert into reference set and emit
-    decode("4004" + hex("name") + "05" + hex("value") + "8080");
-    assertEquals(1, headers.names().size());
-    List<String> values = headers.getAll("name");
-    assertEquals(2, values.size());
-    for (String value : values) {
-      assertEquals("value", value);
-    }
-  }
-
-  @Test
-  public void testLiteralWithSubstitutionIndexingWithLargeValue() throws Exception {
-    // Ignore header name that exceeds max header size
+    // Ignore header that exceeds max header size
     StringBuilder sb = new StringBuilder();
     sb.append("0004");
     sb.append(hex("name"));
-    sb.append("008060");
+    sb.append("7F813F");
     for (int i = 0; i < 8192; i++) {
-      sb.append("61"); // "a"
+      sb.append("61"); // 'a'
     }
     decode(sb.toString());
     assertEquals(0, headers.names().size());
@@ -775,7 +524,7 @@ public class DecompressionTest {
     headers.clear();
     assertEquals(0, headers.names().size());
     // remove from reference set, insert into reference set and emit
-    decode("4004" + hex("name") + "05" + hex("value") + "8080");
+    decode("0004" + hex("name") + "05" + hex("value") + "8181");
     assertEquals(1, headers.names().size());
     List<String> values = headers.getAll("name");
     assertEquals(2, values.size());
