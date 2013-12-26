@@ -167,6 +167,9 @@ public final class Compressor {
     }
   }
 
+  /**
+   * Removes all entries from the reference set.
+   **/
   public void clearReferenceSet(OutputStream out) throws IOException {
     out.write(0x80);
     // encode removed headers
@@ -176,6 +179,11 @@ public final class Compressor {
     }
   }
 
+  /**
+   * Resizes the header table.  If the table is reduced in size, entries may be evicted.
+   *
+   * Section 3.3.3.  Entry Eviction When Header Table Size Changes
+   **/
   public void setHeaderTableSize(OutputStream out, int size) throws IOException {
     maxHeaderTableSize = size;
     ensureCapacity(out, 0);
@@ -239,7 +247,7 @@ public final class Compressor {
   /**
    * Encode string literal according to 4.1.2.
    *
-   * @param out The out to encode into
+   * @param out The OutputStream to encode into
    * @param string The string to encode
    */
   private void encodeStringLiteral(OutputStream out, String string) throws IOException {
@@ -336,10 +344,12 @@ public final class Compressor {
    **/
   private void add(String name, String value) throws IOException {
 
-    head = head - 1;
-    if (head < 0) {
+    if (head == 0) {
       head = headerTable.length - 1;
+    } else {
+      head = head - 1;
     }
+
     if (headerTable[head] == null) {
       headerTable[head] = new HeaderEntry();
     }
@@ -364,16 +374,15 @@ public final class Compressor {
    **/
   private void ensureCapacity(OutputStream out, int headerSize) throws IOException {
     while (size > 0 &&
-        (headerTableSize + headerSize > maxHeaderTableSize ||
-         size == headerTable.length))
+        (headerTableSize + headerSize > maxHeaderTableSize || size == headerTable.length))
     {
       evict(out);
     }
   }
 
   /**
-   * Removes the oldest entry from the header table.  If the entry is in the reference set, its index is emitted in
-   * order to tell the remote side to remove the entry from its reference set.
+   * Removes the oldest entry from the header table.  If the entry has been emitteed in this header set, its index is 
+   * emitted twice in order to remove it from the reference set and emit it.
    **/
   private void evict(OutputStream out) throws IOException {
     HeaderEntry entry = getHeaderEntry(size);

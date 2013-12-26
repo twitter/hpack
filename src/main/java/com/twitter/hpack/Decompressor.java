@@ -358,6 +358,9 @@ public final class Decompressor {
     return truncated;
   }
 
+  /**
+   * Read the name contained at 'index' into name_ and name_length_.
+   **/
   private void readName(int index) throws IOException {
     if (index <= headerTable.size()) {
       ReferenceHeader referenceHeader = headerTable.get(index - 1);
@@ -389,6 +392,9 @@ public final class Decompressor {
     }
   }
 
+  /**
+   * Add header to header table and emit it.
+   **/
   private void insertHeader(HeaderListener headerListener, String name, String value, IndexType indexType) {
     emitHeader(headerListener, name, value);
 
@@ -455,8 +461,7 @@ public final class Decompressor {
     in.read(buf);
 
     if (huffmanEncoded) {
-      byte[] decoded = huffmanDecoder.decode(buf);
-      return decoded;
+      return huffmanDecoder.decode(buf);
     } else {
       return buf;
     }
