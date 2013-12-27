@@ -1,7 +1,7 @@
 {
   "context": "request",
-  "forceHuffmanOff": true,
-  "headerBlocks":
+  "force_huffman_off": true,
+  "header_blocks":
   [
     {
       "headers": [
