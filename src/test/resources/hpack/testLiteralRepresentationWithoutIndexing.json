@@ -1,8 +1,8 @@
 {
   "context": "request",
-  "useIndexing": false,
-  "forceHuffmanOff": true,
-  "headerBlocks":
+  "use_indexing": false,
+  "force_huffman_off": true,
+  "header_blocks":
   [
     {
       "headers": [
