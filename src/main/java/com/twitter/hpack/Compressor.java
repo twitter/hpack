@@ -77,27 +77,6 @@ public final class Compressor {
     this.headerTable = new HeaderEntry[maxHeaderTableSize / HEADER_ENTRY_OVERHEAD + 1];
   }
 
-  /*
-   * Unsigned Little Endian Base 128 Variable-Length Integer Encoding
-   */
-  private static void encodeULE128(OutputStream out, int length) throws IOException {
-    while (true) {
-      if ((length & ~0x7F) == 0) {
-        out.write(length);
-        return;
-      } else {
-        out.write((length & 0x7F) | 0x80);
-        length >>>= 7;
-      }
-    }
-  }
-
-  private static void encodeLiteralString(OutputStream out, String string) throws IOException {
-    byte[] bytes = string.getBytes(StandardCharsets.UTF_8);
-    encodeULE128(out, bytes.length);
-    out.write(bytes);
-  }
-
   /**
    * Encodes a single header into the header block.
    **/
