@@ -1,7 +1,7 @@
 {
   "context": "request",
-  "useIndexing": "false",
-  "forceHuffmanOff": "true",
+  "useIndexing": false,
+  "forceHuffmanOff": true,
   "headerBlocks":
   [
     {

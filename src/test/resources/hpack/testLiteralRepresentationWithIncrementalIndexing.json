@@ -1,6 +1,6 @@
 {
   "context": "request",
-  "forceHuffmanOff": "true",
+  "forceHuffmanOff": true,
   "headerBlocks":
   [
     {
