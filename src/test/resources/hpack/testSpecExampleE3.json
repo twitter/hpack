@@ -1,7 +1,7 @@
 {
-  "maxHeaderSize": "8192",
+  "maxHeaderSize": 8192,
   "context": "request",
-  "forceHuffmanOn": "true",
+  "forceHuffmanOn": true,
   "headerBlocks":
   [
     {
@@ -28,7 +28,7 @@
       ]
     }, 
     {
-      "clearReferenceSet": "true",
+      "clearReferenceSet": true,
       "headers": [
         { ":method": "GET" },
         { ":scheme": "https" },

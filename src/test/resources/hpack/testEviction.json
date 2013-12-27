@@ -1,7 +1,7 @@
 {
-  "maxHeaderSize": "128",
+  "maxHeaderSize": 128,
   "context": "request",
-  "forceHuffmanOn": "true",
+  "forceHuffmanOn": true,
   "headerBlocks":
   [
     {

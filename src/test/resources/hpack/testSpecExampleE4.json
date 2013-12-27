@@ -1,7 +1,7 @@
 {
-  "maxHeaderSize": "256",
+  "maxHeaderSize": 256,
   "context": "response",
-  "forceHuffmanOff": "true",
+  "forceHuffmanOff": true,
   "headerBlocks":
   [
     {
