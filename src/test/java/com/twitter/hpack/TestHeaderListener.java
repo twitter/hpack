@@ -19,14 +19,14 @@ import java.util.List;
 
 final class TestHeaderListener implements HeaderListener {
 
-  private final List<Header> headers;
+  private final List<HeaderField> headers;
 
-  TestHeaderListener(List<Header> headers) {
+  TestHeaderListener(List<HeaderField> headers) {
     this.headers = headers;
   }
 
   @Override
   public void emitHeader(String name, String value) {
-    headers.add(new Header(name, value));
+    headers.add(new HeaderField(name, value));
   }
 }

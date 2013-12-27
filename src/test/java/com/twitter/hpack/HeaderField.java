@@ -17,20 +17,20 @@ package com.twitter.hpack;
 
 import static java.util.Objects.requireNonNull;
 
-final class Header implements Comparable<Header> {
+final class HeaderField implements Comparable<HeaderField> {
   final String name;
   final String value;
 
-  Header(String name, String value) {
+  HeaderField(String name, String value) {
     this.name = requireNonNull(name);
     this.value = requireNonNull(value);
   }
 
   @Override
-  public int compareTo(Header anotherHeader) {
-    int ret = name.compareTo(anotherHeader.name);
+  public int compareTo(HeaderField anotherHeaderField) {
+    int ret = name.compareTo(anotherHeaderField.name);
     if (ret == 0) {
-      ret = value.compareTo(anotherHeader.value);
+      ret = value.compareTo(anotherHeaderField.value);
     }
     return ret;
   }
@@ -40,10 +40,10 @@ final class Header implements Comparable<Header> {
     if (o == this) {
       return true;
     }
-    if (!(o instanceof Header)) {
+    if (!(o instanceof HeaderField)) {
       return false;
     }
-    Header other = (Header) o;
+    HeaderField other = (HeaderField) o;
     return name.equals(other.name) && value.equals(other.value);
   }
 

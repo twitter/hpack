@@ -53,7 +53,7 @@ public class HpackTest {
 
   private static final Gson GSON = new GsonBuilder()
       .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
-      .registerTypeAdapter(Header.class, new HeaderDeserializer())
+      .registerTypeAdapter(HeaderField.class, new HeaderFieldDeserializer())
       .create();
 
   private final String fileName;
@@ -85,17 +85,17 @@ public class HpackTest {
 
   private static void runTestCase(TestCase testCase) throws Exception {
     Compressor compressor = createCompressor(testCase);
-    Decompressor decompressor = createDecompressor(testCase);
+    Decoder decoder = createDecoder(testCase);
 
     List<HeaderBlock> headerBlocks = testCase.headerBlocks;
 
     for (int i = 0; i < headerBlocks.size(); i++) {
       HeaderBlock headerBlock = headerBlocks.get(i);
-      roundTrip(compressor, decompressor, headerBlock);
+      roundTrip(compressor, decoder, headerBlock);
     }
   }
 
-  private static void roundTrip(Compressor compressor, Decompressor decompressor,
+  private static void roundTrip(Compressor compressor, Decoder decoder,
       HeaderBlock headerBlock) throws Exception {
     byte[] actual = encode(compressor, headerBlock.getHeaders(), headerBlock.clearReferenceSet());
     String expectedHex = headerBlock.getEncoded();
@@ -105,15 +105,15 @@ public class HpackTest {
       throw new AssertionError("\nEXPECTED: " + expectedHex + "\nACTUAL  : " + Hex.encodeHexString(actual));
     }
 
-    List<Header> actualHeaders = new ArrayList<Header>();
+    List<HeaderField> actualHeaders = new ArrayList<HeaderField>();
     TestHeaderListener listener = new TestHeaderListener(actualHeaders);
-    decompressor.decode(new ByteArrayInputStream(expected), listener);
-    decompressor.endHeaderBlock(listener);
+    decoder.decode(new ByteArrayInputStream(expected), listener);
+    decoder.endHeaderBlock(listener);
     Collections.sort(actualHeaders);
 
-    List<Header> expectedHeaders = new ArrayList<Header>();
-    for (Header h : headerBlock.getHeaders()) {
-      expectedHeaders.add(new Header(h.name, h.value));
+    List<HeaderField> expectedHeaders = new ArrayList<HeaderField>();
+    for (HeaderField h : headerBlock.getHeaders()) {
+      expectedHeaders.add(new HeaderField(h.name, h.value));
     }
     Collections.sort(expectedHeaders);
 
@@ -143,7 +143,7 @@ public class HpackTest {
     return new Compressor(server, maxHeaderSize, useIndexing, forceHuffmanOn, forceHuffmanOff);
   }
 
-  private static Decompressor createDecompressor(TestCase testCase) {
+  private static Decoder createDecoder(TestCase testCase) {
     boolean server = !RESPONSE.equalsIgnoreCase(testCase.context);
 
     int maxHeaderSize = testCase.maxHeaderSize;
@@ -151,10 +151,10 @@ public class HpackTest {
       maxHeaderSize = HpackUtil.MAX_HEADER_TABLE_SIZE;
     }
 
-    return new Decompressor(server, 8192, maxHeaderSize);
+    return new Decoder(server, 8192, maxHeaderSize);
   }
 
-  private static byte[] encode(Compressor compressor, List<Header> headers, boolean clearReferenceSet)
+  private static byte[] encode(Compressor compressor, List<HeaderField> headers, boolean clearReferenceSet)
       throws IOException {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
@@ -162,7 +162,7 @@ public class HpackTest {
       compressor.clearReferenceSet(baos);
     }
 
-    for (Header e: headers) {
+    for (HeaderField e: headers) {
       compressor.encodeHeader(baos, e.name, e.value);
     }
 
@@ -192,7 +192,7 @@ public class HpackTest {
   static class HeaderBlock {
     private boolean clearReferenceSet;
     private List<String> encoded;
-    private List<Header> headers;
+    private List<HeaderField> headers;
 
     public boolean clearReferenceSet() {
       return clearReferenceSet;
@@ -202,15 +202,15 @@ public class HpackTest {
       return concat(encoded).replaceAll(" ", "");
     }
 
-    public List<Header> getHeaders() {
+    public List<HeaderField> getHeaders() {
       return headers;
     }
   }
 
-  static class HeaderDeserializer implements JsonDeserializer<Header> {
+  static class HeaderFieldDeserializer implements JsonDeserializer<HeaderField> {
 
     @Override
-    public Header deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+    public HeaderField deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
         throws JsonParseException {
       JsonObject jsonObject = json.getAsJsonObject();
       Set<Map.Entry<String, JsonElement>> entrySet = jsonObject.entrySet();
@@ -220,7 +220,7 @@ public class HpackTest {
       Map.Entry<String, JsonElement> entry = entrySet.iterator().next();
       String name = entry.getKey();
       String value = entry.getValue().getAsString();
-      return new Header(name, value);
+      return new HeaderField(name, value);
     }
   }
 }

@@ -31,11 +31,11 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class DecompressionTest {
+public class DecoderTest {
 
   private static final int MAX_HEADER_SIZE = 8192;
 
-  private Decompressor decompressor;
+  private Decoder decoder;
   private HeaderListener mockListener;
 
   private static String hex(String s) {
@@ -44,12 +44,12 @@ public class DecompressionTest {
 
   private void decode(String encoded) throws IOException {
     byte[] b = Hex.decodeHex(encoded.toCharArray());
-    decompressor.decode(new ByteArrayInputStream(b), mockListener);
+    decoder.decode(new ByteArrayInputStream(b), mockListener);
   }
 
   @Before
   public void setUp() {
-    decompressor = new Decompressor(true, MAX_HEADER_SIZE);
+    decoder = new Decoder(true, MAX_HEADER_SIZE);
     mockListener = mock(HeaderListener.class);
   }
 
@@ -58,9 +58,9 @@ public class DecompressionTest {
     // Verify incomplete indices are unread
     byte[] compressed = Hex.decodeHex("FFF0".toCharArray());
     ByteArrayInputStream in = new ByteArrayInputStream(compressed);
-    decompressor.decode(in, mockListener);
+    decoder.decode(in, mockListener);
     assertEquals(1, in.available());
-    decompressor.decode(in, mockListener);
+    decoder.decode(in, mockListener);
     assertEquals(1, in.available());
   }
 
@@ -94,7 +94,7 @@ public class DecompressionTest {
     verify(mockListener, never()).emitHeader(anyString(), anyString());
 
     // Verify header block is reported as truncated
-    assertTrue(decompressor.endHeaderBlock(mockListener));
+    assertTrue(decoder.endHeaderBlock(mockListener));
     verify(mockListener, never()).emitHeader(anyString(), anyString());
 
     // Verify table is unmodified
@@ -117,7 +117,7 @@ public class DecompressionTest {
     verify(mockListener, never()).emitHeader(anyString(), anyString());
 
     // Verify header block is reported as truncated
-    assertTrue(decompressor.endHeaderBlock(mockListener));
+    assertTrue(decoder.endHeaderBlock(mockListener));
     verify(mockListener, never()).emitHeader(anyString(), anyString());
 
     // Verify table is unmodified
@@ -139,11 +139,11 @@ public class DecompressionTest {
     verify(mockListener).emitHeader(anyString(), anyString());
 
     reset(mockListener);
-    assertFalse(decompressor.endHeaderBlock(mockListener));
+    assertFalse(decoder.endHeaderBlock(mockListener));
     verify(mockListener, never()).emitHeader(anyString(), anyString());
 
     // Verify header is added to the reference set
-    assertFalse(decompressor.endHeaderBlock(mockListener));
+    assertFalse(decoder.endHeaderBlock(mockListener));
     verify(mockListener).emitHeader("name", "value");
     verify(mockListener).emitHeader(anyString(), anyString());
 
@@ -163,11 +163,11 @@ public class DecompressionTest {
     verify(mockListener).emitHeader(anyString(), anyString());
 
     reset(mockListener);
-    assertFalse(decompressor.endHeaderBlock(mockListener));
+    assertFalse(decoder.endHeaderBlock(mockListener));
     verify(mockListener, never()).emitHeader(anyString(), anyString());
 
     // Verify all headers has been evicted from table
-    assertFalse(decompressor.endHeaderBlock(mockListener));
+    assertFalse(decoder.endHeaderBlock(mockListener));
     verify(mockListener, never()).emitHeader(anyString(), anyString());
 
     // Verify next header is inserted at index 0
@@ -190,7 +190,7 @@ public class DecompressionTest {
     verify(mockListener, never()).emitHeader(anyString(), anyString());
 
     // Verify header block is reported as truncated
-    assertTrue(decompressor.endHeaderBlock(mockListener));
+    assertTrue(decoder.endHeaderBlock(mockListener));
     verify(mockListener, never()).emitHeader(anyString(), anyString());
 
     // Verify next header is inserted at index 0
@@ -214,7 +214,7 @@ public class DecompressionTest {
     verify(mockListener, never()).emitHeader(anyString(), anyString());
 
     // Verify header block is reported as truncated
-    assertTrue(decompressor.endHeaderBlock(mockListener));
+    assertTrue(decoder.endHeaderBlock(mockListener));
     verify(mockListener, never()).emitHeader(anyString(), anyString());
 
     // Verify next header is inserted at index 0
