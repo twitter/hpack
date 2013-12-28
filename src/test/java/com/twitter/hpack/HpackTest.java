@@ -84,20 +84,20 @@ public class HpackTest {
   }
 
   private static void runTestCase(TestCase testCase) throws Exception {
-    Compressor compressor = createCompressor(testCase);
+    Encoder encoder = createEncoder(testCase);
     Decoder decoder = createDecoder(testCase);
 
     List<HeaderBlock> headerBlocks = testCase.headerBlocks;
 
     for (int i = 0; i < headerBlocks.size(); i++) {
       HeaderBlock headerBlock = headerBlocks.get(i);
-      roundTrip(compressor, decoder, headerBlock);
+      roundTrip(encoder, decoder, headerBlock);
     }
   }
 
-  private static void roundTrip(Compressor compressor, Decoder decoder,
+  private static void roundTrip(Encoder encoder, Decoder decoder,
       HeaderBlock headerBlock) throws Exception {
-    byte[] actual = encode(compressor, headerBlock.getHeaders(), headerBlock.clearReferenceSet());
+    byte[] actual = encode(encoder, headerBlock.getHeaders(), headerBlock.clearReferenceSet());
     String expectedHex = headerBlock.getEncoded();
     byte[] expected = Hex.decodeHex(expectedHex.toCharArray());
 
@@ -128,19 +128,19 @@ public class HpackTest {
     return GSON.fromJson(r, TestCase.class);
   }
 
-  private static Compressor createCompressor(TestCase testCase) {
+  private static Encoder createEncoder(TestCase testCase) {
     boolean server = RESPONSE.equalsIgnoreCase(testCase.context);
 
     int maxHeaderSize = testCase.maxHeaderSize;
     if (maxHeaderSize == 0) {
-      maxHeaderSize = HpackUtil.MAX_HEADER_TABLE_SIZE;
+      maxHeaderSize = HpackUtil.DEFAULT_HEADER_TABLE_SIZE;
     }
 
     boolean useIndexing = testCase.useIndexing;
     boolean forceHuffmanOn = testCase.forceHuffmanOn;
     boolean forceHuffmanOff = testCase.forceHuffmanOff;
 
-    return new Compressor(server, maxHeaderSize, useIndexing, forceHuffmanOn, forceHuffmanOff);
+    return new Encoder(server, maxHeaderSize, useIndexing, forceHuffmanOn, forceHuffmanOff);
   }
 
   private static Decoder createDecoder(TestCase testCase) {
@@ -148,25 +148,25 @@ public class HpackTest {
 
     int maxHeaderSize = testCase.maxHeaderSize;
     if (maxHeaderSize == 0) {
-      maxHeaderSize = HpackUtil.MAX_HEADER_TABLE_SIZE;
+      maxHeaderSize = HpackUtil.DEFAULT_HEADER_TABLE_SIZE;
     }
 
     return new Decoder(server, 8192, maxHeaderSize);
   }
 
-  private static byte[] encode(Compressor compressor, List<HeaderField> headers, boolean clearReferenceSet)
+  private static byte[] encode(Encoder encoder, List<HeaderField> headers, boolean clearReferenceSet)
       throws IOException {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
     if (clearReferenceSet) {
-      compressor.clearReferenceSet(baos);
+      encoder.clearReferenceSet(baos);
     }
 
     for (HeaderField e: headers) {
-      compressor.encodeHeader(baos, e.name, e.value);
+      encoder.encodeHeader(baos, e.name, e.value);
     }
 
-    compressor.endHeaders(baos);
+    encoder.endHeaders(baos);
 
     return baos.toByteArray();
   }

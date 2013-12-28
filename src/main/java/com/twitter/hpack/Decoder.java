@@ -18,20 +18,17 @@ package com.twitter.hpack;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 
 import com.twitter.hpack.HpackUtil.ReferenceHeader;
 
-import static com.twitter.hpack.HpackUtil.HEADER_ENTRY_OVERHEAD;
+import static com.twitter.hpack.HeaderField.HEADER_ENTRY_OVERHEAD;
 
 public final class Decoder {
 
   private static final IOException DECOMPRESSION_EXCEPTION = new IOException("decompression failure");
 
   private final HuffmanDecoder huffmanDecoder;
-
-  private final HeaderTable headerTable;
+  private final HeaderTable<ReferenceHeader> headerTable;
 
   private int maxHeaderSize;
   private long headerSize;
@@ -66,13 +63,13 @@ public final class Decoder {
   }
 
   public Decoder(boolean server, int maxHeaderSize) {
-    this(server, maxHeaderSize, HpackUtil.MAX_HEADER_TABLE_SIZE);
+    this(server, maxHeaderSize, HpackUtil.DEFAULT_HEADER_TABLE_SIZE);
   }
 
   public Decoder(boolean server, int maxHeaderSize, int maxHeaderTableSize) {
     this.huffmanDecoder = server ? HpackUtil.REQUEST_DECODER : HpackUtil.RESPONSE_DECODER;
     this.maxHeaderSize = maxHeaderSize;
-    headerTable = new HeaderTable(maxHeaderTableSize);
+    headerTable = new HeaderTable<ReferenceHeader>(maxHeaderTableSize);
     reset();
   }
 
@@ -355,12 +352,13 @@ public final class Decoder {
   private void readName(int index) throws IOException {
     int headerTableLength = headerTable.length();
     if (index <= headerTableLength) {
-      ReferenceHeader referenceHeader = headerTable.get(index);
+      ReferenceHeader referenceHeader = headerTable.getEntry(index);
       name = referenceHeader.name;
       nameLength = referenceHeader.nameLength;
-    } else if (index - headerTableLength <= StaticTable.size()) {
-      name = StaticTable.getEntry(index - headerTableLength).getName();
-      nameLength = name.length();
+    } else if (index - headerTableLength <= StaticTable.length) {
+      HeaderField headerField = StaticTable.getEntry(index - headerTableLength);
+      name = headerField.name;
+      nameLength = headerField.nameLength;
     } else {
       throw DECOMPRESSION_EXCEPTION;
     }
@@ -369,7 +367,7 @@ public final class Decoder {
   private void toggleIndex(int index, HeaderListener headerListener) throws IOException {
     int headerTableLength = headerTable.length();
     if (index <= headerTableLength) {
-      ReferenceHeader referenceHeader = headerTable.get(index);
+      ReferenceHeader referenceHeader = headerTable.getEntry(index);
       if (referenceHeader.inReferenceSet) {
         referenceHeader.inReferenceSet = false;
       } else {
@@ -377,9 +375,9 @@ public final class Decoder {
         referenceHeader.emitted = true;
         emitHeader(headerListener, referenceHeader.name, referenceHeader.value);
       }
-    } else if (index - headerTableLength <= StaticTable.size()) {
-      StaticTable.Entry staticEntry = StaticTable.getEntry(index - headerTableLength);
-      insertHeader(headerListener, staticEntry.getName(), staticEntry.getValue(), IndexType.INCREMENTAL);
+    } else if (index - headerTableLength <= StaticTable.length) {
+      HeaderField headerField = StaticTable.getEntry(index - headerTableLength);
+      insertHeader(headerListener, headerField.name, headerField.value, IndexType.INCREMENTAL);
     } else {
       throw DECOMPRESSION_EXCEPTION;
     }

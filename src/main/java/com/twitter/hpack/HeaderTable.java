@@ -17,14 +17,12 @@ package com.twitter.hpack;
 
 import java.util.Iterator;
 
-import com.twitter.hpack.HpackUtil.ReferenceHeader;
+import static com.twitter.hpack.HeaderField.HEADER_ENTRY_OVERHEAD;
 
-import static com.twitter.hpack.HpackUtil.HEADER_ENTRY_OVERHEAD;
-
-final class HeaderTable implements Iterable<ReferenceHeader> {
+final class HeaderTable<T extends HeaderField> implements Iterable<T> {
 
   // a circular queue of reference headers
-  private ReferenceHeader[] headerTable;
+  private HeaderField[] headerTable;
   private int head;
   private int tail;
   private int size;
@@ -48,23 +46,91 @@ final class HeaderTable implements Iterable<ReferenceHeader> {
   }
 
   /**
+   * Return the current size of the header table.
+   * This is the sum of the size of the entries.
+   */
+  public int size() {
+    return size;
+  }
+
+  /**
+   * Return the maximum allowable size of the header table.
+   */
+  public int capacity() {
+    return capacity;
+  }
+
+  /**
    * Return the header field at the given index.
    * The first and newest entry is always at index 1,
    * and the oldest entry is at the index length().
    */
-  public ReferenceHeader get(int index) {
+  @SuppressWarnings("unchecked")
+  public T getEntry(int index) {
     if (index <= 0 || index > length()) {
       throw new IndexOutOfBoundsException();
     }
     int i = head - index;
     if (i < 0) {
-      return headerTable[i + headerTable.length];
+      return (T) headerTable[i + headerTable.length];
     } else {
-      return headerTable[i];
+      return (T) headerTable[i];
     }
   }
 
-  public void add(ReferenceHeader header) {
+  /**
+   * Returns the lowest index value for the given header field name in the header table.
+   * Returns -1 if the header field name is not in the header table.
+   */
+  public int getIndex(String name) {
+    int index = -1;
+    int cursor = tail;
+    while (cursor != head) {
+      HeaderField entry = headerTable[cursor];
+      if (equals(name, entry.name)) {
+        index = cursor;
+      }
+      if (++cursor == headerTable.length) {
+        cursor = 0;
+      }
+    }
+    if (index == -1) {
+      return index;
+    } else if (index < head) {
+      return head - index;
+    } else {
+      return headerTable.length - tail + head;
+    }
+  }
+
+  /**
+   * Returns the lowest index value for the given header field name in the header table.
+   * Returns -1 if the header field name is not in the header table.
+   */
+  public int getIndex(String name, String value) {
+    int index = -1;
+    int cursor = tail;
+    while (cursor != head) {
+      HeaderField entry = headerTable[cursor];
+      boolean nameMatches = equals(name, entry.name);
+      boolean valueMatches = equals(value, entry.value);
+      if (nameMatches && valueMatches) {
+        index = cursor;
+      }
+      if (++cursor == headerTable.length) {
+        cursor = 0;
+      }
+    }
+    if (index == -1) {
+      return index;
+    } else if (index < head) {
+      return head - index;
+    } else {
+      return headerTable.length - tail + head;
+    }
+  }
+
+  public void add(T header) {
     int headerSize = header.size();
     if (headerSize > capacity) {
       clear();
@@ -80,10 +146,7 @@ final class HeaderTable implements Iterable<ReferenceHeader> {
     }
   }
 
-  public int capacity() {
-    return capacity;
-  }
-
+  // TODO(jpinner) this must copy old elements
   public void setCapacity(int capacity) {
     if (capacity < 0) {
       throw new IllegalArgumentException("capacity must be positive");
@@ -92,17 +155,22 @@ final class HeaderTable implements Iterable<ReferenceHeader> {
     if (capacity % HEADER_ENTRY_OVERHEAD != 0) {
       maxEntries++;
     }
+//    int size = 0;
+//    HeaderField[] tmp = new HeaderField[maxEntries];
+//
     this.capacity = capacity;
-    this.headerTable = new ReferenceHeader[maxEntries];
+    this.headerTable = new HeaderField[maxEntries];
   }
 
-  private void remove() {
-    ReferenceHeader removed = headerTable[tail];
+  @SuppressWarnings("unchecked")
+  public T remove() {
+    T removed = (T) headerTable[tail];
     size -= removed.size();
     headerTable[tail++] = null;
     if (tail == headerTable.length) {
       tail = 0;
     }
+    return removed;
   }
 
   public void clear() {
@@ -118,11 +186,11 @@ final class HeaderTable implements Iterable<ReferenceHeader> {
     size = 0;
   }
 
-  public Iterator<ReferenceHeader> iterator() {
+  public Iterator<T> iterator() {
     return new Itr();
   }
 
-  private class Itr implements Iterator<ReferenceHeader> {
+  private class Itr implements Iterator<T> {
     int cursor = head;
     int end = tail;
 
@@ -130,16 +198,31 @@ final class HeaderTable implements Iterable<ReferenceHeader> {
       return cursor != end;
     }
 
-    public ReferenceHeader next() {
+    @SuppressWarnings("unchecked")
+    public T next() {
       cursor--;
       if (cursor < 0) {
         cursor = headerTable.length - 1;
       }
-      return headerTable[cursor];
+      return (T) headerTable[cursor];
     }
 
     public void remove() {
       throw new UnsupportedOperationException();
     }
+  }
+
+  /**
+   * A string compare that doesn't leak timing information.
+   */
+  private static boolean equals(String s1, String s2) {
+    if (s1.length() != s2.length()) {
+      return false;
+    }
+    char c = 0;
+    for (int i = 0; i < s1.length(); i++) {
+      c |= (s1.charAt(i) ^ s2.charAt(i));
+    }
+    return c == 0;
   }
 }

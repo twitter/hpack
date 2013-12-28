@@ -19,54 +19,22 @@ final class HpackUtil {
 
   static final String EMPTY = "";
 
-  static final int MAX_HEADER_TABLE_SIZE = 4096;
+  // TODO(jpinner) move this into HTTP/2.0
+  static final int DEFAULT_HEADER_TABLE_SIZE = 4096;
 
-  // Section 3.3.1: Maximum Table Size
-  // The 32 octets are an accounting for the entry structure overhead.
-  // For example, an entry structure using two 64-bits pointers to
-  // reference the name and the value and the entry, and two 64-bits
-  // integer for counting the number of references to these name and value
-  // would use 32 octets.
-  static final int HEADER_ENTRY_OVERHEAD = 32;
-
-  static class ReferenceHeader {
-
-    String name;
-    String value;
-
-    int nameLength;
-    int valueLength;
+  static class ReferenceHeader extends HeaderField {
 
     boolean emitted = false;
     boolean inReferenceSet = false;
 
-    ReferenceHeader() {
-    }
-
     // This constructor can only be used if name and value
     // do not contain any multi-byte characters.
     ReferenceHeader(String name, String value) {
-      this(name, value, name.length(), value.length());
+      super(name, value, name.length(), value.length());
     }
 
     ReferenceHeader(String name, String value, int nameLength, int valueLength) {
-      this.name = name;
-      this.value = value;
-      this.nameLength = nameLength;
-      this.valueLength = valueLength;
-    }
-
-    int size() {
-      return nameLength + valueLength + HEADER_ENTRY_OVERHEAD;
-    }
-
-    @Override
-    public String toString() {
-      return name + ": " + value;
-    }
-
-    static int sizeOf(String name, String value) {
-      return name.length() + value.length() + HEADER_ENTRY_OVERHEAD;
+      super(name, value, nameLength, valueLength);
     }
   }
 

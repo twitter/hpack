@@ -17,13 +17,37 @@ package com.twitter.hpack;
 
 import static java.util.Objects.requireNonNull;
 
-final class HeaderField implements Comparable<HeaderField> {
+class HeaderField implements Comparable<HeaderField> {
+
+  // Section 3.3.1: Maximum Table Size
+  // The 32 octets are an accounting for the entry structure overhead.
+  static final int HEADER_ENTRY_OVERHEAD = 32;
+
+  static int sizeOf(String name, String value) {
+    return name.length() + value.length() + HEADER_ENTRY_OVERHEAD;
+  }
+
   final String name;
   final String value;
 
+  final int nameLength;
+  final int valueLength;
+
+  // This constructor can only be used if name and value
+  // do not contain any multi-byte characters.
   HeaderField(String name, String value) {
+    this(name, value, name.length(), value.length());
+  }
+
+  HeaderField(String name, String value, int nameLength, int valueLength) {
     this.name = requireNonNull(name);
     this.value = requireNonNull(value);
+    this.nameLength = nameLength;
+    this.valueLength = valueLength;
+  }
+
+  int size() {
+    return nameLength + valueLength + HEADER_ENTRY_OVERHEAD;
   }
 
   @Override
@@ -36,14 +60,14 @@ final class HeaderField implements Comparable<HeaderField> {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (o == this) {
+  public boolean equals(Object obj) {
+    if (obj == this) {
       return true;
     }
-    if (!(o instanceof HeaderField)) {
+    if (!(obj instanceof HeaderField)) {
       return false;
     }
-    HeaderField other = (HeaderField) o;
+    HeaderField other = (HeaderField) obj;
     return name.equals(other.name) && value.equals(other.value);
   }
 
