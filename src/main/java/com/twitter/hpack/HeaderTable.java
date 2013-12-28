@@ -28,8 +28,8 @@ final class HeaderTable<T extends HeaderField> implements Iterable<T> {
   private int size;
   private int capacity;
 
-  HeaderTable(int capacity) {
-    setCapacity(capacity);
+  HeaderTable(int initialCapacity) {
+    setCapacity(initialCapacity);
   }
 
   /**
@@ -146,20 +146,33 @@ final class HeaderTable<T extends HeaderField> implements Iterable<T> {
     }
   }
 
-  // TODO(jpinner) this must copy old elements
   public void setCapacity(int capacity) {
     if (capacity < 0) {
-      throw new IllegalArgumentException("capacity must be positive");
+      throw new IllegalArgumentException("Illegal Capacity: "+ capacity);
     }
     int maxEntries = capacity / HEADER_ENTRY_OVERHEAD;
     if (capacity % HEADER_ENTRY_OVERHEAD != 0) {
       maxEntries++;
     }
-//    int size = 0;
-//    HeaderField[] tmp = new HeaderField[maxEntries];
-//
+    HeaderField[] tmp = new HeaderField[maxEntries];
+
+    // initially size will be 0 so remove won't be called
+    while (size > capacity) {
+      remove();
+    }
+
+    // initially length will be 0 so there will be no copy
+    int len = length();
+    int cursor = tail;
+    for (int i = 0; i < len; i++) {
+      tmp[i] = headerTable[cursor++];
+      if (cursor == headerTable.length) {
+        cursor = 0;
+      }
+    }
+
     this.capacity = capacity;
-    this.headerTable = new HeaderField[maxEntries];
+    this.headerTable = tmp;
   }
 
   @SuppressWarnings("unchecked")
