@@ -79,54 +79,42 @@ final class HeaderTable<T extends HeaderField> implements Iterable<T> {
   }
 
   /**
-   * Returns the lowest index value for the given header field name in the header table.
-   * Returns -1 if the header field name is not in the header table.
+   * Returns the header index for the given header field in the header table.
    */
-  public int getIndex(String name) {
-    int index = -1;
-    int cursor = tail;
-    while (cursor != head) {
-      HeaderField entry = headerTable[cursor];
-      if (equals(name, entry.name)) {
-        index = cursor;
-      }
-      if (++cursor == headerTable.length) {
-        cursor = 0;
-      }
-    }
-    if (index == -1) {
-      return index;
-    } else if (index < head) {
-      return head - index;
-    } else {
-      return headerTable.length - tail + head;
-    }
-  }
-
-  /**
-   * Returns the lowest index value for the given header field name in the header table.
-   * Returns -1 if the header field name is not in the header table.
-   */
-  public int getIndex(String name, String value) {
-    int index = -1;
+  public HeaderIndex getIndex(String name, String value) {
+    int nameIndex = -1;
+    int fieldIndex = -1;
     int cursor = tail;
     while (cursor != head) {
       HeaderField entry = headerTable[cursor];
       boolean nameMatches = equals(name, entry.name);
       boolean valueMatches = equals(value, entry.value);
-      if (nameMatches && valueMatches) {
-        index = cursor;
+      if (nameMatches) {
+        nameIndex = cursor;
+        if (valueMatches) {
+          fieldIndex = cursor;
+        }
       }
       if (++cursor == headerTable.length) {
         cursor = 0;
       }
     }
+    nameIndex = getOffset(nameIndex);
+    fieldIndex = getOffset(fieldIndex);
+    if (nameIndex == -1) {
+      return HeaderIndex.NOT_FOUND;
+    } else {
+      return new HeaderIndex(nameIndex, fieldIndex);
+    }
+  }
+
+  private int getOffset(int index) {
     if (index == -1) {
       return index;
     } else if (index < head) {
       return head - index;
     } else {
-      return headerTable.length - tail + head;
+      return headerTable.length - index + head;
     }
   }
 
