@@ -23,10 +23,6 @@ class HeaderField implements Comparable<HeaderField> {
   // The 32 octets are an accounting for the entry structure overhead.
   static final int HEADER_ENTRY_OVERHEAD = 32;
 
-  static int sizeOf(String name, String value) {
-    return name.length() + value.length() + HEADER_ENTRY_OVERHEAD;
-  }
-
   final String name;
   final String value;
 

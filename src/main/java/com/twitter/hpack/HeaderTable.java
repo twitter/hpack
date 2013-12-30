@@ -15,9 +15,6 @@
  */
 package com.twitter.hpack;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import static com.twitter.hpack.HeaderField.HEADER_ENTRY_OVERHEAD;
 
 class HeaderTable<T extends HeaderField> {
