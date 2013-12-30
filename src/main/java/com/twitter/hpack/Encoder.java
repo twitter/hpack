@@ -63,7 +63,8 @@ public final class Encoder {
    **/
   public void encodeHeader(OutputStream out, String name, String value) throws IOException {
 
-    int headerSize = ReferenceHeader.sizeOf(name, value);
+    ReferenceHeader header = new ReferenceHeader(name, value);
+    int headerSize = header.size();
 
     // If the headerSize is greater than the max table size then it must be encoded literally
     if (headerSize > headerTable.capacity()) {
@@ -74,7 +75,7 @@ public final class Encoder {
       return;
     }
 
-    int headerTableIndex = headerTable.getIndex(name, value);
+    int headerTableIndex = headerTable.getIndex(header);
     if (headerTableIndex != -1) {
       ReferenceHeader entry = headerTable.getEntry(headerTableIndex);
 

@@ -38,6 +38,20 @@ final class HpackUtil {
     }
   }
 
+  /**
+   * A string compare that doesn't leak timing information.
+   */
+  static boolean equals(String s1, String s2) {
+    if (s1.length() != s2.length()) {
+      return false;
+    }
+    char c = 0;
+    for (int i = 0; i < s1.length(); i++) {
+      c |= (s1.charAt(i) ^ s2.charAt(i));
+    }
+    return c == 0;
+  }
+
   // Appendix C: Huffman Codes For Requests
   private static final int[] REQUEST_CODES = {
       0x7ffffba,

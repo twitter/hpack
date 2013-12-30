@@ -15,16 +15,22 @@
  */
 package com.twitter.hpack;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static com.twitter.hpack.HeaderField.HEADER_ENTRY_OVERHEAD;
 
 final class HeaderTable<T extends HeaderField> {
 
-  // a circular queue of reference headers
+  // a circular queue of header fields
   private HeaderField[] headerTable;
   private int head;
   private int tail;
   private int size;
   private int capacity;
+
+  // a map of header field to array offset
+  private Map<HeaderField, Integer> headerMap;
 
   HeaderTable(int initialCapacity) {
     setCapacity(initialCapacity);
@@ -81,48 +87,39 @@ final class HeaderTable<T extends HeaderField> {
    * Returns -1 if the header field name is not in the header table.
    */
   public int getIndex(String name) {
-    int index = -1;
-    int cursor = tail;
-    while (cursor != head) {
-      HeaderField entry = headerTable[cursor];
-      if (equals(name, entry.name)) {
-        index = cursor;
+    int cursor = head;
+    while (cursor != tail) {
+      cursor--;
+      if (cursor < 0) {
+        cursor = headerTable.length - 1;
       }
-      if (++cursor == headerTable.length) {
-        cursor = 0;
+      HeaderField entry = headerTable[cursor];
+      if (HpackUtil.equals(name, entry.name)) {
+        return getIndex(cursor);
       }
     }
-    return getOffset(index);
+    return -1;
   }
 
   /**
    * Returns the lowest index value for the header field in the header table.
    * Returns -1 if the header field is not in the header table.
    */
-  public int getIndex(String name, String value) {
-    int index = -1;
-    int cursor = tail;
-    while (cursor != head) {
-      HeaderField entry = headerTable[cursor];
-      boolean nameMatches = equals(name, entry.name);
-      boolean valueMatches = equals(value, entry.value);
-      if (nameMatches && valueMatches) {
-        index = cursor;
-      }
-      if (++cursor == headerTable.length) {
-        cursor = 0;
-      }
+  public int getIndex(HeaderField header) {
+    Integer offset = headerMap.get(header);
+    if (offset == null) {
+      return -1;
     }
-    return getOffset(index);
-  }
+    return getIndex(offset);
+ }
 
-  private int getOffset(int index) {
-    if (index == -1) {
-      return index;
-    } else if (index < head) {
-      return head - index;
+  private int getIndex(int offset) {
+    if (offset == -1) {
+      return offset;
+    } else if (offset < head) {
+      return head - offset;
     } else {
-      return headerTable.length - index + head;
+      return headerTable.length - offset + head;
     }
   }
 
@@ -135,6 +132,7 @@ final class HeaderTable<T extends HeaderField> {
     while (size + headerSize > capacity) {
       remove();
     }
+    headerMap.put(header, head);
     headerTable[head++] = header;
     size += header.size();
     if (head == headerTable.length) {
@@ -142,6 +140,7 @@ final class HeaderTable<T extends HeaderField> {
     }
   }
 
+  @SuppressWarnings("unchecked")
   public void setCapacity(int capacity) {
     if (capacity < 0) {
       throw new IllegalArgumentException("Illegal Capacity: "+ capacity);
@@ -157,11 +156,15 @@ final class HeaderTable<T extends HeaderField> {
       remove();
     }
 
+    this.headerMap = new HashMap<HeaderField, Integer>(maxEntries, 1);
+
     // initially length will be 0 so there will be no copy
     int len = length();
     int cursor = tail;
     for (int i = 0; i < len; i++) {
-      tmp[i] = headerTable[cursor++];
+      T entry = (T) headerTable[cursor++];
+      tmp[i] = entry;
+      headerMap.put(entry, i);
       if (cursor == headerTable.length) {
         cursor = 0;
       }
@@ -174,6 +177,7 @@ final class HeaderTable<T extends HeaderField> {
   @SuppressWarnings("unchecked")
   public T remove() {
     T removed = (T) headerTable[tail];
+    headerMap.remove(removed);
     size -= removed.size();
     headerTable[tail++] = null;
     if (tail == headerTable.length) {
@@ -183,7 +187,6 @@ final class HeaderTable<T extends HeaderField> {
   }
 
   public void clear() {
-    // null out entries;
     while (tail != head) {
       headerTable[tail++] = null;
       if (tail == headerTable.length) {
@@ -193,19 +196,6 @@ final class HeaderTable<T extends HeaderField> {
     head = 0;
     tail = 0;
     size = 0;
-  }
-
-  /**
-   * A string compare that doesn't leak timing information.
-   */
-  private static boolean equals(String s1, String s2) {
-    if (s1.length() != s2.length()) {
-      return false;
-    }
-    char c = 0;
-    for (int i = 0; i < s1.length(); i++) {
-      c |= (s1.charAt(i) ^ s2.charAt(i));
-    }
-    return c == 0;
+    headerMap.clear();
   }
 }
