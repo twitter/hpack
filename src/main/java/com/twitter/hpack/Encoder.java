@@ -70,9 +70,7 @@ public final class Encoder {
 
     // If the headerSize is greater than the max table size then it must be encoded literally
     if (headerSize > headerTable.capacity()) {
-      int headerTableIndex = headerTable.getIndex(name);
-      HeaderIndex staticTableIndex = StaticTable.getIndex(name, HpackUtil.EMPTY);
-      int nameIndex = getNameIndex(headerTableIndex, staticTableIndex.nameIndex);
+      int nameIndex = getNameIndex(name);
       encodeLiteral(out, name, value, false, nameIndex);
       return;
     }
@@ -108,16 +106,15 @@ public final class Encoder {
         entry.emitted = true;
       }
     } else {
-      HeaderIndex staticTableIndex = StaticTable.getIndex(name, value);
-      if (staticTableIndex.fieldIndex != -1 && useIndexing) {
+      int staticTableIndex = StaticTable.getIndex(header);
+      if (staticTableIndex != -1 && useIndexing) {
         // Section 4.2 - Indexed Header Field
-        int nameIndex = staticTableIndex.fieldIndex + headerTable.length();
+        int nameIndex = staticTableIndex + headerTable.length();
         ensureCapacity(out, headerSize);
         add(name, value);
         encodeInteger(out, 0x80, 7, nameIndex);
       } else {
-        headerTableIndex = headerTable.getIndex(name);
-        int nameIndex = getNameIndex(headerTableIndex, staticTableIndex.nameIndex);
+        int nameIndex = getNameIndex(name);
         if (useIndexing) {
           ensureCapacity(out, headerSize);
         }
@@ -229,10 +226,10 @@ public final class Encoder {
     }
   }
 
-  private int getNameIndex(int headerTableNameIndex, int staticTableNameIndex) {
-    int index = headerTableNameIndex;
+  private int getNameIndex(String name) {
+    int index = headerTable.getIndex(name);
     if (index == -1) {
-      index = staticTableNameIndex;
+      index = StaticTable.getIndex(name);
       if (index >= 0) {
         index += headerTable.length();
       }

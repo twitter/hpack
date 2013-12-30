@@ -103,28 +103,40 @@ final class StaticTable {
   }
 
   /**
-   * Returns the header index for the given header field in the static table.
+   * Returns the lowest index value for the given header field name in the static table.
+   * Returns -1 if the header field name is not in the static table.
    */
-  static HeaderIndex getIndex(String name, String value) {
-    Integer nameIndex = STATIC_INDEX_BY_NAME.get(name);
-    if (nameIndex == null) {
-      return HeaderIndex.NOT_FOUND;
+  static int getIndex(String name) {
+    Integer index = STATIC_INDEX_BY_NAME.get(name);
+    if (index == null) {
+      return -1;
+    }
+    return index;
+  }
+
+  /**
+   * Returns the index value for the given header field in the static table.
+   * Returns -1 if the header field is not in the static table.
+   */
+  static int getIndex(HeaderField header) {
+    Integer index = STATIC_INDEX_BY_NAME.get(header.name);
+    if (index == null) {
+      return -1;
     }
 
     // Note this assumes all entries for a given header field are sequential.
-    int index = nameIndex;
     while (index <= length) {
       HeaderField entry = getEntry(index);
-      if (!entry.name.equals(name)) {
+      if (!entry.name.equals(header.name)) {
         break;
       }
-      if (entry.value.equals(value)) {
-        return new HeaderIndex(nameIndex, index);
+      if (entry.value.equals(header.value)) {
+       return index;
       }
       index++;
     }
 
-    return new HeaderIndex(nameIndex);
+    return -1;
   }
 
   // create a map of header name to index value to allow quick lookup
