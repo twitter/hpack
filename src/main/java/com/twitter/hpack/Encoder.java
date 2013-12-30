@@ -18,6 +18,8 @@ package com.twitter.hpack;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.twitter.hpack.HpackUtil.ReferenceHeader;
 
@@ -31,7 +33,7 @@ public final class Encoder {
   // the huffman encoder used to encode literal values
   private final HuffmanEncoder huffmanEncoder;
 
-  private HeaderTable<ReferenceHeader> headerTable;
+  private EncoderTable headerTable;
 
   public Encoder(boolean server) {
     this(server, HpackUtil.DEFAULT_HEADER_TABLE_SIZE);
@@ -55,7 +57,7 @@ public final class Encoder {
     this.useIndexing = useIndexing;
     this.forceHuffmanOn = forceHuffmanOn;
     this.forceHuffmanOff = forceHuffmanOff;
-    this.headerTable = new HeaderTable<ReferenceHeader>(maxHeaderTableSize);
+    this.headerTable = new EncoderTable(maxHeaderTableSize);
   }
 
   /**
@@ -268,6 +270,60 @@ public final class Encoder {
         encodeInteger(out, 0x80, 7, index);
         encodeInteger(out, 0x80, 7, index);
       }
+    }
+  }
+
+  private static class EncoderTable extends HeaderTable<ReferenceHeader> {
+    // a map of header field to array offset
+    private Map<ReferenceHeader, Integer> headerMap;
+
+    public EncoderTable(int initialCapacity) {
+      super(initialCapacity);
+    }
+
+    /**
+     * Returns the lowest index value for the header field in the header table.
+     * Returns -1 if the header field is not in the header table.
+     */
+    public int getIndex(ReferenceHeader header) {
+      Integer offset = headerMap.get(header);
+      if (offset == null) {
+        return -1;
+      }
+      return getIndex(offset);
+    }
+
+    @Override
+    public void add(ReferenceHeader header) {
+      int index = head;
+      super.add(header);
+      if (length() > 0) {
+        // header was successfully added
+        headerMap.put(header, index);
+      }
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public void setCapacity(int capacity) {
+      super.setCapacity(capacity);
+      headerMap = new HashMap<ReferenceHeader, Integer>(headerTable.length, 1);
+      for (int i = tail; i < head; i++) {
+        headerMap.put((ReferenceHeader) headerTable[i], i);
+      }
+    }
+
+    @Override
+    public ReferenceHeader remove() {
+      ReferenceHeader removed = super.remove();
+      headerMap.remove(removed);
+      return removed;
+    }
+
+    @Override
+    public void clear() {
+      super.clear();
+      headerMap.clear();
     }
   }
 }

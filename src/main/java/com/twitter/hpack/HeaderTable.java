@@ -20,17 +20,14 @@ import java.util.Map;
 
 import static com.twitter.hpack.HeaderField.HEADER_ENTRY_OVERHEAD;
 
-final class HeaderTable<T extends HeaderField> {
+class HeaderTable<T extends HeaderField> {
 
   // a circular queue of header fields
-  private HeaderField[] headerTable;
-  private int head;
-  private int tail;
+  HeaderField[] headerTable;
+  int head;
+  int tail;
   private int size;
   private int capacity;
-
-  // a map of header field to array offset
-  private Map<HeaderField, Integer> headerMap;
 
   HeaderTable(int initialCapacity) {
     setCapacity(initialCapacity);
@@ -101,19 +98,7 @@ final class HeaderTable<T extends HeaderField> {
     return -1;
   }
 
-  /**
-   * Returns the lowest index value for the header field in the header table.
-   * Returns -1 if the header field is not in the header table.
-   */
-  public int getIndex(HeaderField header) {
-    Integer offset = headerMap.get(header);
-    if (offset == null) {
-      return -1;
-    }
-    return getIndex(offset);
- }
-
-  private int getIndex(int offset) {
+  int getIndex(int offset) {
     if (offset == -1) {
       return offset;
     } else if (offset < head) {
@@ -132,7 +117,6 @@ final class HeaderTable<T extends HeaderField> {
     while (size + headerSize > capacity) {
       remove();
     }
-    headerMap.put(header, head);
     headerTable[head++] = header;
     size += header.size();
     if (head == headerTable.length) {
@@ -156,20 +140,18 @@ final class HeaderTable<T extends HeaderField> {
       remove();
     }
 
-    this.headerMap = new HashMap<HeaderField, Integer>(maxEntries, 1);
-
     // initially length will be 0 so there will be no copy
     int len = length();
     int cursor = tail;
     for (int i = 0; i < len; i++) {
       T entry = (T) headerTable[cursor++];
       tmp[i] = entry;
-      headerMap.put(entry, i);
       if (cursor == headerTable.length) {
         cursor = 0;
       }
     }
-
+    this.tail = 0;
+    this.head = tail + len;
     this.capacity = capacity;
     this.headerTable = tmp;
   }
@@ -177,7 +159,6 @@ final class HeaderTable<T extends HeaderField> {
   @SuppressWarnings("unchecked")
   public T remove() {
     T removed = (T) headerTable[tail];
-    headerMap.remove(removed);
     size -= removed.size();
     headerTable[tail++] = null;
     if (tail == headerTable.length) {
@@ -196,6 +177,5 @@ final class HeaderTable<T extends HeaderField> {
     head = 0;
     tail = 0;
     size = 0;
-    headerMap.clear();
   }
 }
