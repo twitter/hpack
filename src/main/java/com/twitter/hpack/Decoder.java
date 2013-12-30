@@ -338,7 +338,8 @@ public final class Decoder {
   }
 
   public boolean endHeaderBlock(HeaderListener headerListener) {
-    for (ReferenceHeader referenceHeader : headerTable) {
+    for (int index = 1; index <= headerTable.length(); index++) {
+      ReferenceHeader referenceHeader = headerTable.getEntry(index);
       if (referenceHeader.inReferenceSet && !referenceHeader.emitted) {
         emitHeader(headerListener, referenceHeader.name, referenceHeader.value);
       }
@@ -417,8 +418,10 @@ public final class Decoder {
   }
 
   private void clearReferenceSet() {
-    for (ReferenceHeader referenceHeader : headerTable) {
+    for (int index = 1; index <= headerTable.length(); index++) {
+      ReferenceHeader referenceHeader = headerTable.getEntry(index);
       referenceHeader.inReferenceSet = false;
+      referenceHeader.emitted = false;
     }
   }
 

@@ -15,11 +15,9 @@
  */
 package com.twitter.hpack;
 
-import java.util.Iterator;
-
 import static com.twitter.hpack.HeaderField.HEADER_ENTRY_OVERHEAD;
 
-final class HeaderTable<T extends HeaderField> implements Iterable<T> {
+final class HeaderTable<T extends HeaderField> {
 
   // a circular queue of reference headers
   private HeaderField[] headerTable;
@@ -195,32 +193,6 @@ final class HeaderTable<T extends HeaderField> implements Iterable<T> {
     head = 0;
     tail = 0;
     size = 0;
-  }
-
-  public Iterator<T> iterator() {
-    return new Itr();
-  }
-
-  private class Itr implements Iterator<T> {
-    int cursor = head;
-    int end = tail;
-
-    public boolean hasNext() {
-      return cursor != end;
-    }
-
-    @SuppressWarnings("unchecked")
-    public T next() {
-      cursor--;
-      if (cursor < 0) {
-        cursor = headerTable.length - 1;
-      }
-      return (T) headerTable[cursor];
-    }
-
-    public void remove() {
-      throw new UnsupportedOperationException();
-    }
   }
 
   /**
