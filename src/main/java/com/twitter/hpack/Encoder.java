@@ -67,16 +67,16 @@ public final class Encoder {
 
     // If the headerSize is greater than the max table size then it must be encoded literally
     if (headerSize > headerTable.capacity()) {
-      HeaderIndex headerTableIndex = headerTable.getIndex(name, HpackUtil.EMPTY);
+      int headerTableIndex = headerTable.getIndex(name);
       HeaderIndex staticTableIndex = StaticTable.getIndex(name, HpackUtil.EMPTY);
-      int nameIndex = getNameIndex(headerTableIndex.nameIndex, staticTableIndex.nameIndex);
+      int nameIndex = getNameIndex(headerTableIndex, staticTableIndex.nameIndex);
       encodeLiteral(out, name, value, false, nameIndex);
       return;
     }
 
-    HeaderIndex headerTableIndex = headerTable.getIndex(name, value);
-    if (headerTableIndex.fieldIndex != -1) {
-      ReferenceHeader entry = headerTable.getEntry(headerTableIndex.fieldIndex);
+    int headerTableIndex = headerTable.getIndex(name, value);
+    if (headerTableIndex != -1) {
+      ReferenceHeader entry = headerTable.getEntry(headerTableIndex);
 
       if (entry.inReferenceSet) {
         if (!entry.emitted) {
@@ -86,7 +86,7 @@ public final class Encoder {
 
           // remove from reference set, emit, remove from reference set, emit
           for (int i = 0; i < 4; i++) {
-            encodeInteger(out, 0x80, 7, headerTableIndex.fieldIndex);
+            encodeInteger(out, 0x80, 7, headerTableIndex);
           }
 
           // inReferenceSet will be set to true after the header block is completed.  In the meantime,
@@ -97,11 +97,11 @@ public final class Encoder {
       } else {
         if (entry.emitted) {
           // first remove it from the reference set
-          encodeInteger(out, 0x80, 7, headerTableIndex.fieldIndex);
+          encodeInteger(out, 0x80, 7, headerTableIndex);
         }
 
         // Section 4.2 - Indexed Header Field
-        encodeInteger(out, 0x80, 7, headerTableIndex.fieldIndex);
+        encodeInteger(out, 0x80, 7, headerTableIndex);
         entry.emitted = true;
       }
     } else {
@@ -113,7 +113,8 @@ public final class Encoder {
         add(name, value);
         encodeInteger(out, 0x80, 7, nameIndex);
       } else {
-        int nameIndex = getNameIndex(headerTableIndex.nameIndex, staticTableIndex.nameIndex);
+        headerTableIndex = headerTable.getIndex(name);
+        int nameIndex = getNameIndex(headerTableIndex, staticTableIndex.nameIndex);
         if (useIndexing) {
           ensureCapacity(out, headerSize);
         }

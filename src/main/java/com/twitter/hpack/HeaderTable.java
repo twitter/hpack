@@ -79,33 +79,43 @@ final class HeaderTable<T extends HeaderField> implements Iterable<T> {
   }
 
   /**
-   * Returns the header index for the given header field in the header table.
+   * Returns the lowest index value for the header field name in the header table.
+   * Returns -1 if the header field name is not in the header table.
    */
-  public HeaderIndex getIndex(String name, String value) {
-    int nameIndex = -1;
-    int fieldIndex = -1;
+  public int getIndex(String name) {
+    int index = -1;
     int cursor = tail;
     while (cursor != head) {
       HeaderField entry = headerTable[cursor];
-      boolean nameMatches = equals(name, entry.name);
-      boolean valueMatches = equals(value, entry.value);
-      if (nameMatches) {
-        nameIndex = cursor;
-        if (valueMatches) {
-          fieldIndex = cursor;
-        }
+      if (equals(name, entry.name)) {
+        index = cursor;
       }
       if (++cursor == headerTable.length) {
         cursor = 0;
       }
     }
-    nameIndex = getOffset(nameIndex);
-    fieldIndex = getOffset(fieldIndex);
-    if (nameIndex == -1) {
-      return HeaderIndex.NOT_FOUND;
-    } else {
-      return new HeaderIndex(nameIndex, fieldIndex);
+    return getOffset(index);
+  }
+
+  /**
+   * Returns the lowest index value for the header field in the header table.
+   * Returns -1 if the header field is not in the header table.
+   */
+  public int getIndex(String name, String value) {
+    int index = -1;
+    int cursor = tail;
+    while (cursor != head) {
+      HeaderField entry = headerTable[cursor];
+      boolean nameMatches = equals(name, entry.name);
+      boolean valueMatches = equals(value, entry.value);
+      if (nameMatches && valueMatches) {
+        index = cursor;
+      }
+      if (++cursor == headerTable.length) {
+        cursor = 0;
+      }
     }
+    return getOffset(index);
   }
 
   private int getOffset(int index) {
