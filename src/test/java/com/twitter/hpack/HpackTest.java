@@ -54,7 +54,7 @@ public class HpackTest {
 
   @Test
   public void test() throws Exception {
-    InputStream is = HpackTest.class.getResourceAsStream(TEST_DIR + fileName);
+    InputStream is = HpackTest.class.getResourceAsStream(TEST_DIR + '/' + fileName);
     TestCase testCase = TestCase.load(is);
     testCase.testCompress();
     testCase.testDecompress();

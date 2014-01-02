@@ -20,6 +20,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -68,10 +69,15 @@ final class TestCase {
   void testCompress() throws Exception {
     Encoder encoder = createEncoder();
 
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    
     for (int i = 0; i < headerBlocks.size(); i++) {
       HeaderBlock headerBlock = headerBlocks.get(i);
 
-      byte[] actual = encode(encoder, headerBlock.getHeaders(), headerBlock.clearReferenceSet());
+      baos.reset();
+      encode(baos, encoder, headerBlock.getHeaders(), headerBlock.clearReferenceSet());
+      
+      byte[] actual = baos.toByteArray();
 
       if (!Arrays.equals(actual, headerBlock.encodedBytes)) {
         throw new AssertionError("\nEXPECTED: " + headerBlock.getEncodedStr() + 
@@ -102,10 +108,24 @@ final class TestCase {
     }
   }
   
+  private static class NullOutputStream extends OutputStream {
+    public void write(int b) throws IOException {
+    }
+
+    public void write(byte b[]) throws IOException {
+    }
+
+    public void write(byte b[], int off, int len) throws IOException {
+    }
+  }
+  
+  private static NullOutputStream NULL_OUTPUT_STREAM = new NullOutputStream();
+  
   void encode(Encoder encoder) throws Exception {
+     
     for (int i = 0; i < headerBlocks.size(); i++) {
       HeaderBlock headerBlock = headerBlocks.get(i);
-      encode(encoder, headerBlock.getHeaders(), headerBlock.clearReferenceSet());
+      encode(NULL_OUTPUT_STREAM, encoder, headerBlock.getHeaders(), headerBlock.clearReferenceSet());
     }
   }
   
@@ -138,21 +158,19 @@ final class TestCase {
     return new Decoder(server, 8192, maxHeaderSize);
   }
 
-  private static byte[] encode(Encoder encoder, List<HeaderField> headers, boolean clearReferenceSet)
+  private static void encode(OutputStream os, Encoder encoder, List<HeaderField> headers, boolean clearReferenceSet)
       throws IOException {
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
     if (clearReferenceSet) {
-      encoder.clearReferenceSet(baos);
+      encoder.clearReferenceSet(os);
     }
 
-    for (HeaderField e: headers) {
-      encoder.encodeHeader(baos, e.name, e.value);
+    for (int i = 0; i < headers.size(); i++) {
+      HeaderField e = headers.get(i);
+      encoder.encodeHeader(os, e.name, e.value);
     }
 
-    encoder.endHeaders(baos);
-
-    return baos.toByteArray();
+    encoder.endHeaders(os);
   }
 
   private static List<HeaderField> decode(Decoder decoder, byte[] expected) throws IOException {

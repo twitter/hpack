@@ -28,7 +28,14 @@ public final class Decoder {
   private static final IOException DECOMPRESSION_EXCEPTION = new IOException("decompression failure");
 
   private final HuffmanDecoder huffmanDecoder;
-  private final HeaderTable<ReferenceHeader> headerTable;
+
+  // a circular queue of header entries
+  private ReferenceHeader[] headerTable;
+  private int head;
+  private int size;
+
+  private int headerTableSize;
+  private int maxHeaderTableSize;
 
   private int maxHeaderSize;
   private long headerSize;
@@ -69,7 +76,10 @@ public final class Decoder {
   public Decoder(boolean server, int maxHeaderSize, int maxHeaderTableSize) {
     this.huffmanDecoder = server ? HpackUtil.REQUEST_DECODER : HpackUtil.RESPONSE_DECODER;
     this.maxHeaderSize = maxHeaderSize;
-    headerTable = new HeaderTable<ReferenceHeader>(maxHeaderTableSize);
+    this.maxHeaderTableSize = maxHeaderTableSize;
+    
+    this.headerTable = new ReferenceHeader[maxHeaderTableSize / HeaderField.HEADER_ENTRY_OVERHEAD + 1];
+    
     reset();
   }
 
@@ -167,8 +177,8 @@ public final class Decoder {
             }
 
             // Check name length against max header table size
-            if (nameLength + HEADER_ENTRY_OVERHEAD > headerTable.capacity()) {
-              headerTable.clear();
+            if (nameLength + HEADER_ENTRY_OVERHEAD > maxHeaderTableSize) {
+              clear();
               name = HpackUtil.EMPTY;
               skipLength = nameLength;
               state = State.SKIP_LITERAL_HEADER_NAME;
@@ -203,8 +213,8 @@ public final class Decoder {
           }
 
           // Check name length against max header table size
-          if (nameLength + HEADER_ENTRY_OVERHEAD > headerTable.capacity()) {
-            headerTable.clear();
+          if (nameLength + HEADER_ENTRY_OVERHEAD > maxHeaderTableSize) {
+            clear();
             name = HpackUtil.EMPTY;
             skipLength = nameLength;
             state = State.SKIP_LITERAL_HEADER_NAME;
@@ -257,8 +267,8 @@ public final class Decoder {
             }
 
             // Check new header size against max header table size
-            if (newHeaderSize + HEADER_ENTRY_OVERHEAD > headerTable.capacity()) {
-              headerTable.clear();
+            if (newHeaderSize + HEADER_ENTRY_OVERHEAD > maxHeaderTableSize) {
+              clear();
               state = State.SKIP_LITERAL_HEADER_VALUE;
               break;
             }
@@ -301,8 +311,8 @@ public final class Decoder {
           }
 
           // Check new header size against max header table size
-          if (newHeaderSize + HEADER_ENTRY_OVERHEAD > headerTable.capacity()) {
-            headerTable.clear();
+          if (newHeaderSize + HEADER_ENTRY_OVERHEAD > maxHeaderTableSize) {
+            clear();
             state = State.SKIP_LITERAL_HEADER_VALUE;
             break;
           }
@@ -337,9 +347,19 @@ public final class Decoder {
     }
   }
 
+  private ReferenceHeader getHeaderEntry(int index) {
+    return headerTable[(head + index - 1) % headerTable.length];
+  }
+  
+  private void clear() {
+    head = 0;
+    size = 0;
+    headerTableSize = 0;
+  }
+  
   public boolean endHeaderBlock(HeaderListener headerListener) {
-    for (int index = 1; index <= headerTable.length(); index++) {
-      ReferenceHeader referenceHeader = headerTable.getEntry(index);
+    for (int index = 1; index <= size; index++) {
+      ReferenceHeader referenceHeader = getHeaderEntry(index);
       if (referenceHeader.inReferenceSet && !referenceHeader.emitted) {
         emitHeader(headerListener, referenceHeader.name, referenceHeader.value);
       }
@@ -351,24 +371,21 @@ public final class Decoder {
   }
 
   private void readName(int index) throws IOException {
-    int headerTableLength = headerTable.length();
-    if (index <= headerTableLength) {
-      ReferenceHeader referenceHeader = headerTable.getEntry(index);
+    if (index <= size) {
+      ReferenceHeader referenceHeader = getHeaderEntry(index);
       name = referenceHeader.name;
       nameLength = referenceHeader.nameLength;
-    } else if (index - headerTableLength <= StaticTable.length) {
-      HeaderField headerField = StaticTable.getEntry(index - headerTableLength);
-      name = headerField.name;
-      nameLength = headerField.nameLength;
+    } else if (index - size <= StaticTable.SIZE) {
+      name = StaticTable.getEntry(index - size).name;
+      nameLength = name.length();
     } else {
       throw DECOMPRESSION_EXCEPTION;
     }
   }
 
   private void toggleIndex(int index, HeaderListener headerListener) throws IOException {
-    int headerTableLength = headerTable.length();
-    if (index <= headerTableLength) {
-      ReferenceHeader referenceHeader = headerTable.getEntry(index);
+    if (index <= size) {
+      ReferenceHeader referenceHeader = getHeaderEntry(index);
       if (referenceHeader.inReferenceSet) {
         referenceHeader.inReferenceSet = false;
       } else {
@@ -376,9 +393,9 @@ public final class Decoder {
         referenceHeader.emitted = true;
         emitHeader(headerListener, referenceHeader.name, referenceHeader.value);
       }
-    } else if (index - headerTableLength <= StaticTable.length) {
-      HeaderField headerField = StaticTable.getEntry(index - headerTableLength);
-      insertHeader(headerListener, headerField.name, headerField.value, IndexType.INCREMENTAL);
+    } else if (index - size <= StaticTable.SIZE) {
+      HeaderField staticEntry = StaticTable.getEntry(index - size);
+      insertHeader(headerListener, staticEntry.name, staticEntry.value, IndexType.INCREMENTAL);
     } else {
       throw DECOMPRESSION_EXCEPTION;
     }
@@ -395,13 +412,50 @@ public final class Decoder {
         ReferenceHeader referenceHeader = new ReferenceHeader(name, value, nameLength, valueLength);
         referenceHeader.emitted = true;
         referenceHeader.inReferenceSet = true;
-        headerTable.add(referenceHeader);
+        int headerSize = referenceHeader.size();
+        if (headerSize > maxHeaderTableSize) {
+          clear();
+          break;
+        }
+        ensureCapacity(headerSize);
+        add(referenceHeader);
+        headerTableSize += headerSize;
         break;
 
       default:
         throw new IllegalStateException("should not reach here");
     }
   }
+  
+  /**
+   * Ensure that the header table has enough room to hold 'headerSize' more bytes.  Will evict the oldest entries until
+   * sufficient space is available.
+   **/
+  private void ensureCapacity(int headerSize) {
+    while (size > 0 && (headerTableSize + headerSize > maxHeaderTableSize)) {
+      evict();
+    }
+  }
+
+  private void evict() {
+    ReferenceHeader removedHeader = getHeaderEntry(size);
+    headerTableSize -= removedHeader.size();
+    size--;
+  }
+  
+  /**
+   * Adds a new header entry to the header table.
+   **/
+  private void add(ReferenceHeader entry) {
+    if (head <= 0) {
+      head = headerTable.length - 1;
+    } else {
+      head = head - 1;
+    }
+
+    headerTable[head] = entry;
+    size++;
+  }  
 
   private void emitHeader(HeaderListener headerListener, String name, String value) {
     if (name.length() == 0) {
@@ -418,10 +472,9 @@ public final class Decoder {
   }
 
   private void clearReferenceSet() {
-    for (int index = 1; index <= headerTable.length(); index++) {
-      ReferenceHeader referenceHeader = headerTable.getEntry(index);
+    for (int i = 1; i <= size; i++) {
+      ReferenceHeader referenceHeader = getHeaderEntry(i);
       referenceHeader.inReferenceSet = false;
-      referenceHeader.emitted = false;
     }
   }
 
@@ -441,8 +494,7 @@ public final class Decoder {
     in.read(buf);
 
     if (huffmanEncoded) {
-      byte[] decoded = huffmanDecoder.decode(buf);
-      return decoded;
+      return huffmanDecoder.decode(buf);
     } else {
       return buf;
     }
@@ -474,4 +526,5 @@ public final class Decoder {
     in.reset();
     throw DECOMPRESSION_EXCEPTION;
   }
+  
 }

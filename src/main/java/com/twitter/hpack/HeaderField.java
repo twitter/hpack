@@ -29,8 +29,6 @@ class HeaderField implements Comparable<HeaderField> {
   final int nameLength;
   final int valueLength;
 
-  private int hash; // Default to 0
-
   // This constructor can only be used if name and value
   // do not contain any multi-byte characters.
   HeaderField(String name, String value) {
@@ -47,6 +45,10 @@ class HeaderField implements Comparable<HeaderField> {
   int size() {
     return nameLength + valueLength + HEADER_ENTRY_OVERHEAD;
   }
+  
+  static int sizeOf(String name, String value) {
+    return name.length() + value.length() + HeaderField.HEADER_ENTRY_OVERHEAD;
+  }
 
   @Override
   public int compareTo(HeaderField anotherHeaderField) {
@@ -55,21 +57,6 @@ class HeaderField implements Comparable<HeaderField> {
       ret = value.compareTo(anotherHeaderField.value);
     }
     return ret;
-  }
-
-  @Override
-  public int hashCode() {
-    int h = hash;
-    if (h == 0 && name.length() + value.length() > 0) {
-      for (int i = 0; i < name.length(); i++) {
-        h = 31 * h + name.charAt(i);
-      }
-      for (int i = 0; i < value.length(); i++) {
-        h = 31 * h + value.charAt(i);
-      }
-      hash = h;
-    }
-    return h;
   }
 
   @Override
