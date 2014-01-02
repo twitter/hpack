@@ -38,8 +38,8 @@ public final class Encoder {
   // for each entry in the header table, maps the name to a list of entries with the same name
   private Map<String, HeaderEntry> headerByName = new HashMap<String, HeaderEntry>();
 
+  // doubly linked list of header entries
   private HeaderEntry head;
-  
   private HeaderEntry tail;
   
   // maximum allowable header table size in bytes

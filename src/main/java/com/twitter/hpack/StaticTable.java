@@ -91,7 +91,7 @@ final class StaticTable {
   /**
    * The number of header fields in the static table.
    */
-  static final int SIZE = STATIC_TABLE.size();
+  static final int LENGTH = STATIC_TABLE.size();
   
   private static final Map<String, Integer> STATIC_INDEX_BY_NAME = createMap();
 
@@ -125,7 +125,7 @@ final class StaticTable {
     }
     
     // Note this assumes all entries for a given header field are sequential.
-    while (index < SIZE) {
+    while (index < LENGTH) {
       HeaderField entry = STATIC_TABLE.get(index);
       if (!entry.name.equals(name)) {
         break;
@@ -146,7 +146,7 @@ final class StaticTable {
     HashMap<String, Integer> ret = new HashMap<String, Integer>();
     // Iterate through the static table in reverse order to                                       
     // save the smallest index for a given name in the map.
-    for (int i = SIZE - 1; i >= 0; i--) {
+    for (int i = LENGTH - 1; i >= 0; i--) {
       HeaderField entry = STATIC_TABLE.get(i);
       ret.put(entry.name, i);
     }

@@ -352,6 +352,9 @@ public final class Decoder {
   }
   
   private void clear() {
+    for (int i = 0; i < headerTable.length; i++) {
+      headerTable[i] = null;
+    }
     head = 0;
     size = 0;
     headerTableSize = 0;
@@ -375,7 +378,7 @@ public final class Decoder {
       ReferenceHeader referenceHeader = getHeaderEntry(index);
       name = referenceHeader.name;
       nameLength = referenceHeader.nameLength;
-    } else if (index - size <= StaticTable.SIZE) {
+    } else if (index - size <= StaticTable.LENGTH) {
       name = StaticTable.getEntry(index - size).name;
       nameLength = name.length();
     } else {
@@ -393,7 +396,7 @@ public final class Decoder {
         referenceHeader.emitted = true;
         emitHeader(headerListener, referenceHeader.name, referenceHeader.value);
       }
-    } else if (index - size <= StaticTable.SIZE) {
+    } else if (index - size <= StaticTable.LENGTH) {
       HeaderField staticEntry = StaticTable.getEntry(index - size);
       insertHeader(headerListener, staticEntry.name, staticEntry.value, IndexType.INCREMENTAL);
     } else {
@@ -438,7 +441,9 @@ public final class Decoder {
   }
 
   private void evict() {
-    ReferenceHeader removedHeader = getHeaderEntry(size);
+    int index = (head + size - 1) % headerTable.length;
+    ReferenceHeader removedHeader = headerTable[index];
+    headerTable[index] = null;
     headerTableSize -= removedHeader.size();
     size--;
   }
