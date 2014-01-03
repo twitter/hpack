@@ -120,8 +120,8 @@ final class StaticTable {
    * Returns the index value for the given header field in the static table.
    * Returns -1 if the header field is not in the static table.
    */
-  static int getIndex(HeaderField header) {
-    int index = getIndex(header.name);
+  static int getIndex(byte[] name, byte[] value) {
+    int index = getIndex(name);
     if (index == -1) {
       return -1;
     }
@@ -129,10 +129,10 @@ final class StaticTable {
     // Note this assumes all entries for a given header field are sequential.
     while (index <= length) {
       HeaderField entry = getEntry(index);
-      if (!HpackUtil.equals(header.name, entry.name)) {
+      if (!HpackUtil.equals(name, entry.name)) {
         break;
       }
-      if (HpackUtil.equals(header.value, entry.value)) {
+      if (HpackUtil.equals(value, entry.value)) {
         return index;
       }
       index++;

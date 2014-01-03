@@ -25,13 +25,15 @@ class HeaderField implements Comparable<HeaderField> {
   // The 32 octets are an accounting for the entry structure overhead.
   static final int HEADER_ENTRY_OVERHEAD = 32;
 
+  static int sizeOf(byte[] name, byte[] value) {
+    return name.length + value.length + HEADER_ENTRY_OVERHEAD;
+  }
+
   final byte[] name;
   final byte[] value;
 
   boolean emitted = false;
   boolean inReferenceSet = false;
-
-  private int hash; // Default to 0
 
   // This constructor can only be used if name and value are ASCII encoded.
   HeaderField(String name, String value) {
@@ -71,21 +73,6 @@ class HeaderField implements Comparable<HeaderField> {
       k++;
     }
     return len1 - len2;
-  }
-
-  @Override
-  public int hashCode() {
-    int h = hash;
-    if (h == 0 && name.length + value.length > 0) {
-      for (int i = 0; i < name.length; i++) {
-        h = 31 * h + name[i];
-      }
-      for (int i = 0; i < value.length; i++) {
-        h = 31 * h + value[i];
-      }
-      hash = h;
-    }
-    return h;
   }
 
   @Override
