@@ -15,8 +15,6 @@
  */
 package com.twitter.hpack;
 
-import java.nio.charset.StandardCharsets;
-
 import static java.util.Objects.requireNonNull;
 
 class HeaderField implements Comparable<HeaderField> {
@@ -25,67 +23,40 @@ class HeaderField implements Comparable<HeaderField> {
   // The 32 octets are an accounting for the entry structure overhead.
   static final int HEADER_ENTRY_OVERHEAD = 32;
 
-  final byte[] name;
-  final byte[] value;
+  final String name;
+  final String value;
 
-  boolean emitted = false;
-  boolean inReferenceSet = false;
+  final int nameLength;
+  final int valueLength;
 
-  private int hash; // Default to 0
-
-  // This constructor can only be used if name and value are ASCII encoded.
+  // This constructor can only be used if name and value
+  // do not contain any multi-byte characters.
   HeaderField(String name, String value) {
-    this(name.getBytes(StandardCharsets.US_ASCII), value.getBytes(StandardCharsets.US_ASCII));
+    this(name, value, name.length(), value.length());
   }
 
-  HeaderField(byte[] name, byte[] value) {
+  HeaderField(String name, String value, int nameLength, int valueLength) {
     this.name = requireNonNull(name);
     this.value = requireNonNull(value);
+    this.nameLength = nameLength;
+    this.valueLength = valueLength;
   }
 
   int size() {
-    return name.length + value.length + HEADER_ENTRY_OVERHEAD;
+    return nameLength + valueLength + HEADER_ENTRY_OVERHEAD;
+  }
+  
+  static int sizeOf(String name, String value) {
+    return name.length() + value.length() + HeaderField.HEADER_ENTRY_OVERHEAD;
   }
 
   @Override
   public int compareTo(HeaderField anotherHeaderField) {
-    int ret = compareTo(name, anotherHeaderField.name);
+    int ret = name.compareTo(anotherHeaderField.name);
     if (ret == 0) {
-      ret = compareTo(value, anotherHeaderField.value);
+      ret = value.compareTo(anotherHeaderField.value);
     }
     return ret;
-  }
-
-  private int compareTo(byte[] s1, byte[] s2) {
-    int len1 = s1.length;
-    int len2 = s2.length;
-    int lim = Math.min(len1, len2);
-
-    int k = 0;
-    while (k < lim) {
-      byte b1 = s1[k];
-      byte b2 = s2[k];
-      if (b1 != b2) {
-        return b1 - b2;
-      }
-      k++;
-    }
-    return len1 - len2;
-  }
-
-  @Override
-  public int hashCode() {
-    int h = hash;
-    if (h == 0 && name.length + value.length > 0) {
-      for (int i = 0; i < name.length; i++) {
-        h = 31 * h + name[i];
-      }
-      for (int i = 0; i < value.length; i++) {
-        h = 31 * h + value[i];
-      }
-      hash = h;
-    }
-    return h;
   }
 
   @Override
@@ -104,8 +75,6 @@ class HeaderField implements Comparable<HeaderField> {
 
   @Override
   public String toString() {
-    String nameString = new String(name);
-    String valueString = new String(value);
-    return nameString + ": " + valueString;
+    return name + ": " + value;
   }
 }

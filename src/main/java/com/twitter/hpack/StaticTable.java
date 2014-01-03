@@ -15,15 +15,14 @@
  */
 package com.twitter.hpack;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-final class StaticTable {
+import static com.twitter.hpack.HpackUtil.EMPTY;
 
-  private static final String EMPTY = "";
+final class StaticTable {
 
   // Appendix B: Static Table
   private static final List<HeaderField> STATIC_TABLE = Arrays.asList(
@@ -89,12 +88,12 @@ final class StaticTable {
     /* 60 */ new HeaderField("www-authenticate", EMPTY)
   );
 
-  private static final Map<String, Integer> STATIC_INDEX_BY_NAME = createMap();
-
   /**
    * The number of header fields in the static table.
    */
-  static final int length = STATIC_TABLE.size();
+  static final int LENGTH = STATIC_TABLE.size();
+  
+  private static final Map<String, Integer> STATIC_INDEX_BY_NAME = createMap();
 
   /**
    * Return the header field at the given index value.
@@ -107,33 +106,32 @@ final class StaticTable {
    * Returns the lowest index value for the given header field name in the static table.
    * Returns -1 if the header field name is not in the static table.
    */
-  static int getIndex(byte[] name) {
-    String nameString = new String(name, 0, name.length, StandardCharsets.ISO_8859_1);
-    Integer index = STATIC_INDEX_BY_NAME.get(nameString);
-    if (index == null) {
-      return -1;
+  static int getIndex(String name) {
+    Integer i = STATIC_INDEX_BY_NAME.get(name);
+    if (i != null) {
+      return i + 1;
     }
-    return index;
+    return -1;
   }
 
   /**
    * Returns the index value for the given header field in the static table.
    * Returns -1 if the header field is not in the static table.
    */
-  static int getIndex(HeaderField header) {
-    int index = getIndex(header.name);
-    if (index == -1) {
+  static int getIndex(String name, String value) {
+    Integer index = STATIC_INDEX_BY_NAME.get(name);
+    if (index == null) {
       return -1;
     }
-
+    
     // Note this assumes all entries for a given header field are sequential.
-    while (index <= length) {
-      HeaderField entry = getEntry(index);
-      if (!HpackUtil.equals(header.name, entry.name)) {
+    while (index < LENGTH) {
+      HeaderField entry = STATIC_TABLE.get(index);
+      if (!entry.name.equals(name)) {
         break;
       }
-      if (HpackUtil.equals(header.value, entry.value)) {
-        return index;
+      if (entry.value.equals(value)) {
+        return index + 1;
       }
       index++;
     }
@@ -141,20 +139,22 @@ final class StaticTable {
     return -1;
   }
 
-  // create a map of header name to index value to allow quick lookup
+  /**
+   * Create a map of header name to index value to allow quick lookup
+   */
   private static Map<String, Integer> createMap() {
-    int length = STATIC_TABLE.size();
-    HashMap<String, Integer> ret = new HashMap<String, Integer>(length);
-    // Iterate through the static table in reverse order to
+    HashMap<String, Integer> ret = new HashMap<String, Integer>();
+    // Iterate through the static table in reverse order to                                       
     // save the smallest index for a given name in the map.
-    for (int index = length; index > 0; index--) {
-      HeaderField entry = getEntry(index);
-      String name = new String(entry.name, 0, entry.name.length, StandardCharsets.ISO_8859_1);
-      ret.put(name, index);
+    for (int i = LENGTH - 1; i >= 0; i--) {
+      HeaderField entry = STATIC_TABLE.get(i);
+      ret.put(entry.name, i);
     }
     return ret;
   }
 
-  // singleton
+  /**
+   * Singleton
+   */
   private StaticTable() {}
 }

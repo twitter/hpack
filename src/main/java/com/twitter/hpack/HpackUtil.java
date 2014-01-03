@@ -17,19 +17,37 @@ package com.twitter.hpack;
 
 final class HpackUtil {
 
+  static final String EMPTY = "";
+
   // TODO(jpinner) move this into HTTP/2.0
   static final int DEFAULT_HEADER_TABLE_SIZE = 4096;
+
+  static class ReferenceHeader extends HeaderField {
+
+    boolean emitted = false;
+    boolean inReferenceSet = false;
+
+    // This constructor can only be used if name and value
+    // do not contain any multi-byte characters.
+    ReferenceHeader(String name, String value) {
+      super(name, value, name.length(), value.length());
+    }
+
+    ReferenceHeader(String name, String value, int nameLength, int valueLength) {
+      super(name, value, nameLength, valueLength);
+    }
+  }
 
   /**
    * A string compare that doesn't leak timing information.
    */
-  static boolean equals(byte[] s1, byte[] s2) {
-    if (s1.length != s2.length) {
+  static boolean equals(String s1, String s2) {
+    if (s1.length() != s2.length()) {
       return false;
     }
     char c = 0;
-    for (int i = 0; i < s1.length; i++) {
-      c |= (s1[i] ^ s2[i]);
+    for (int i = 0; i < s1.length(); i++) {
+      c |= (s1.charAt(i) ^ s2.charAt(i));
     }
     return c == 0;
   }

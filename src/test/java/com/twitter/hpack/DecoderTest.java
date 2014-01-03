@@ -17,7 +17,6 @@ package com.twitter.hpack;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -25,7 +24,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
@@ -41,10 +40,6 @@ public class DecoderTest {
 
   private static String hex(String s) {
     return Hex.encodeHexString(s.getBytes());
-  }
-
-  private static byte[] getBytes(String s) {
-    return s.getBytes(StandardCharsets.US_ASCII);
   }
 
   private void decode(String encoded) throws IOException {
@@ -96,16 +91,16 @@ public class DecoderTest {
     }
     sb.append("00");
     decode(sb.toString());
-    verify(mockListener, never()).emitHeader((byte[]) any(), (byte[]) any());
+    verify(mockListener, never()).emitHeader(anyString(), anyString());
 
     // Verify header block is reported as truncated
     assertTrue(decoder.endHeaderBlock(mockListener));
-    verify(mockListener, never()).emitHeader((byte[]) any(), (byte[]) any());
+    verify(mockListener, never()).emitHeader(anyString(), anyString());
 
     // Verify table is unmodified
     decode("86");
-    verify(mockListener).emitHeader(getBytes(":scheme"), getBytes("http"));
-    verify(mockListener).emitHeader((byte[]) any(), (byte[]) any());
+    verify(mockListener).emitHeader(":scheme", "http");
+    verify(mockListener).emitHeader(anyString(), anyString());
   }
 
   @Test
@@ -119,16 +114,16 @@ public class DecoderTest {
       sb.append("61"); // 'a'
     }
     decode(sb.toString());
-    verify(mockListener, never()).emitHeader((byte[]) any(), (byte[]) any());
+    verify(mockListener, never()).emitHeader(anyString(), anyString());
 
     // Verify header block is reported as truncated
     assertTrue(decoder.endHeaderBlock(mockListener));
-    verify(mockListener, never()).emitHeader((byte[]) any(), (byte[]) any());
+    verify(mockListener, never()).emitHeader(anyString(), anyString());
 
     // Verify table is unmodified
     decode("86");
-    verify(mockListener).emitHeader(getBytes(":scheme"), getBytes("http"));
-    verify(mockListener).emitHeader((byte[]) any(), (byte[]) any());
+    verify(mockListener).emitHeader(":scheme", "http");
+    verify(mockListener).emitHeader(anyString(), anyString());
   }
 
   @Test(expected = IOException.class)
@@ -140,17 +135,17 @@ public class DecoderTest {
   public void testLiteralWithIncrementalIndexingCompleteEviction() throws Exception {
     // Verify indexed host header
     decode("0004" + hex("name") + "05" + hex("value"));
-    verify(mockListener).emitHeader(getBytes("name"), getBytes("value"));
-    verify(mockListener).emitHeader((byte[]) any(), (byte[]) any());
+    verify(mockListener).emitHeader("name", "value");
+    verify(mockListener).emitHeader(anyString(), anyString());
 
     reset(mockListener);
     assertFalse(decoder.endHeaderBlock(mockListener));
-    verify(mockListener, never()).emitHeader((byte[]) any(), (byte[]) any());
+    verify(mockListener, never()).emitHeader(anyString(), anyString());
 
     // Verify header is added to the reference set
     assertFalse(decoder.endHeaderBlock(mockListener));
-    verify(mockListener).emitHeader(getBytes("name"), getBytes("value"));
-    verify(mockListener).emitHeader((byte[]) any(), (byte[]) any());
+    verify(mockListener).emitHeader("name", "value");
+    verify(mockListener).emitHeader(anyString(), anyString());
 
     reset(mockListener);
     StringBuilder sb = new StringBuilder();
@@ -164,22 +159,22 @@ public class DecoderTest {
       sb.append("61"); // 'a'
     }
     decode(sb.toString());
-    verify(mockListener).emitHeader(getBytes(":authority"), getBytes(value));
-    verify(mockListener).emitHeader((byte[]) any(), (byte[]) any());
+    verify(mockListener).emitHeader(":authority", value);
+    verify(mockListener).emitHeader(anyString(), anyString());
 
     reset(mockListener);
     assertFalse(decoder.endHeaderBlock(mockListener));
-    verify(mockListener, never()).emitHeader((byte[]) any(), (byte[]) any());
+    verify(mockListener, never()).emitHeader(anyString(), anyString());
 
     // Verify all headers has been evicted from table
     assertFalse(decoder.endHeaderBlock(mockListener));
-    verify(mockListener, never()).emitHeader((byte[]) any(), (byte[]) any());
+    verify(mockListener, never()).emitHeader(anyString(), anyString());
 
     // Verify next header is inserted at index 0
     // remove from reference set, insert into reference set and emit
     decode("0004" + hex("name") + "05" + hex("value") + "8181");
-    verify(mockListener, times(2)).emitHeader(getBytes("name"), getBytes("value"));
-    verify(mockListener, times(2)).emitHeader((byte[]) any(), (byte[]) any());
+    verify(mockListener, times(2)).emitHeader("name", "value");
+    verify(mockListener, times(2)).emitHeader(anyString(), anyString());
   }
 
   @Test
@@ -192,17 +187,17 @@ public class DecoderTest {
     }
     sb.append("00");
     decode(sb.toString());
-    verify(mockListener, never()).emitHeader((byte[]) any(), (byte[]) any());
+    verify(mockListener, never()).emitHeader(anyString(), anyString());
 
     // Verify header block is reported as truncated
     assertTrue(decoder.endHeaderBlock(mockListener));
-    verify(mockListener, never()).emitHeader((byte[]) any(), (byte[]) any());
+    verify(mockListener, never()).emitHeader(anyString(), anyString());
 
     // Verify next header is inserted at index 0
     // remove from reference set, insert into reference set and emit
     decode("0004" + hex("name") + "05" + hex("value") + "8181");
-    verify(mockListener, times(2)).emitHeader(getBytes("name"), getBytes("value"));
-    verify(mockListener, times(2)).emitHeader((byte[]) any(), (byte[]) any());
+    verify(mockListener, times(2)).emitHeader("name", "value");
+    verify(mockListener, times(2)).emitHeader(anyString(), anyString());
   }
 
   @Test
@@ -216,16 +211,16 @@ public class DecoderTest {
       sb.append("61"); // 'a'
     }
     decode(sb.toString());
-    verify(mockListener, never()).emitHeader((byte[]) any(), (byte[]) any());
+    verify(mockListener, never()).emitHeader(anyString(), anyString());
 
     // Verify header block is reported as truncated
     assertTrue(decoder.endHeaderBlock(mockListener));
-    verify(mockListener, never()).emitHeader((byte[]) any(), (byte[]) any());
+    verify(mockListener, never()).emitHeader(anyString(), anyString());
 
     // Verify next header is inserted at index 0
     // remove from reference set, insert into reference set and emit
     decode("0004" + hex("name") + "05" + hex("value") + "8181");
-    verify(mockListener, times(2)).emitHeader(getBytes("name"), getBytes("value"));
-    verify(mockListener, times(2)).emitHeader((byte[]) any(), (byte[]) any());
+    verify(mockListener, times(2)).emitHeader("name", "value");
+    verify(mockListener, times(2)).emitHeader(anyString(), anyString());
   }
 }
