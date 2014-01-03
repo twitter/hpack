@@ -17,7 +17,7 @@ package com.twitter.hpack;
 
 import static com.twitter.hpack.HeaderField.HEADER_ENTRY_OVERHEAD;
 
-class HeaderTable {
+class HeaderTable<T extends HeaderField> {
 
   // a circular queue of header fields
   HeaderField[] headerTable;
@@ -63,26 +63,49 @@ class HeaderTable {
    * The first and newest entry is always at index 1,
    * and the oldest entry is at the index length().
    */
-  public HeaderField getEntry(int index) {
+  @SuppressWarnings("unchecked")
+  public T getEntry(int index) {
     if (index <= 0 || index > length()) {
       throw new IndexOutOfBoundsException();
     }
     int i = head - index;
     if (i < 0) {
-      return headerTable[i + headerTable.length];
+      return (T) headerTable[i + headerTable.length];
     } else {
-      return headerTable[i];
+      return (T) headerTable[i];
     }
   }
 
   /**
-   * Add the header field to the header table.
-   * Entries are evicted from the header table until the size of the table
-   * and the new header field is less than the table's capacity.
-   * If the size of the new entry is larger than the table's capacity,
-   * the header table will be cleared.
+   * Returns the lowest index value for the header field name in the header table.
+   * Returns -1 if the header field name is not in the header table.
    */
-  public void add(HeaderField header) {
+  public int getIndex(String name) {
+    int cursor = head;
+    while (cursor != tail) {
+      cursor--;
+      if (cursor < 0) {
+        cursor = headerTable.length - 1;
+      }
+      HeaderField entry = headerTable[cursor];
+      if (HpackUtil.equals(name, entry.name)) {
+        return getIndex(cursor);
+      }
+    }
+    return -1;
+  }
+
+  int getIndex(int offset) {
+    if (offset == -1) {
+      return offset;
+    } else if (offset < head) {
+      return head - offset;
+    } else {
+      return headerTable.length - offset + head;
+    }
+  }
+
+  public void add(T header) {
     int headerSize = header.size();
     if (headerSize > capacity) {
       clear();
@@ -98,38 +121,7 @@ class HeaderTable {
     }
   }
 
-
-  /**
-   * Remove and return the oldest header field from the header table.
-   */
-  public HeaderField remove() {
-    HeaderField removed = headerTable[tail];
-    if (removed == null) {
-      return null;
-    }
-    size -= removed.size();
-    headerTable[tail++] = null;
-    if (tail == headerTable.length) {
-      tail = 0;
-    }
-    return removed;
-  }
-
-  /**
-   * Remove all entries from the header table.
-   */
-  public void clear() {
-    while (tail != head) {
-      headerTable[tail++] = null;
-      if (tail == headerTable.length) {
-        tail = 0;
-      }
-    }
-    head = 0;
-    tail = 0;
-    size = 0;
-  }
-
+  @SuppressWarnings("unchecked")
   public void setCapacity(int capacity) {
     if (capacity < 0) {
       throw new IllegalArgumentException("Illegal Capacity: "+ capacity);
@@ -149,7 +141,7 @@ class HeaderTable {
     int len = length();
     int cursor = tail;
     for (int i = 0; i < len; i++) {
-      HeaderField entry = headerTable[cursor++];
+      T entry = (T) headerTable[cursor++];
       tmp[i] = entry;
       if (cursor == headerTable.length) {
         cursor = 0;
@@ -159,5 +151,28 @@ class HeaderTable {
     this.head = tail + len;
     this.capacity = capacity;
     this.headerTable = tmp;
+  }
+
+  @SuppressWarnings("unchecked")
+  public T remove() {
+    T removed = (T) headerTable[tail];
+    size -= removed.size();
+    headerTable[tail++] = null;
+    if (tail == headerTable.length) {
+      tail = 0;
+    }
+    return removed;
+  }
+
+  public void clear() {
+    while (tail != head) {
+      headerTable[tail++] = null;
+      if (tail == headerTable.length) {
+        tail = 0;
+      }
+    }
+    head = 0;
+    tail = 0;
+    size = 0;
   }
 }

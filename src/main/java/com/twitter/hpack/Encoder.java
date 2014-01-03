@@ -17,9 +17,13 @@ package com.twitter.hpack;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Arrays;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+
+import com.twitter.hpack.HpackUtil.ReferenceHeader;
+
+import static com.twitter.hpack.HpackUtil.DEFAULT_HEADER_TABLE_SIZE;
 
 public final class Encoder {
 
@@ -31,10 +35,21 @@ public final class Encoder {
   // the huffman encoder used to encode literal values
   private final HuffmanEncoder huffmanEncoder;
 
-  private EncoderTable headerTable;
+  // for each entry in the header table, maps the name to a list of entries with the same name
+  private Map<String, HeaderEntry> headerByName = new HashMap<String, HeaderEntry>();
+
+  // doubly linked list of header entries
+  private HeaderEntry head;
+  private HeaderEntry tail;
+  
+  // maximum allowable header table size in bytes
+  private int maxHeaderTableSize;
+
+  // estimate of the current header table size in bytes
+  private int headerTableSize;
 
   public Encoder(boolean server) {
-    this(server, HpackUtil.DEFAULT_HEADER_TABLE_SIZE);
+    this(server, DEFAULT_HEADER_TABLE_SIZE);
   }
 
   public Encoder(boolean server, int maxHeaderTableSize) {
@@ -44,85 +59,80 @@ public final class Encoder {
   /**
    * Constructor for testing only.
    */
-  Encoder(
-      boolean server,
-      int maxHeaderTableSize,
-      boolean useIndexing,
-      boolean forceHuffmanOn,
-      boolean forceHuffmanOff
-  ) {
+  Encoder(boolean server, int maxHeaderTableSize, boolean useIndexing, boolean forceHuffmanOn, 
+      boolean forceHuffmanOff) {
     this.huffmanEncoder = server ? HpackUtil.RESPONSE_ENCODER : HpackUtil.REQUEST_ENCODER;
     this.useIndexing = useIndexing;
+    this.maxHeaderTableSize = maxHeaderTableSize;
     this.forceHuffmanOn = forceHuffmanOn;
     this.forceHuffmanOff = forceHuffmanOff;
-    this.headerTable = new EncoderTable(maxHeaderTableSize);
   }
 
   /**
    * Encodes a single header into the header block.
    **/
-  public void encodeHeader(OutputStream out, byte[] name, byte[] value) throws IOException {
+  public void encodeHeader(OutputStream out, String name, String value) throws IOException {
 
-    // Copy so that modifications of original do not affect table
-    name = Arrays.copyOf(name, name.length);
-    value = Arrays.copyOf(value, value.length);
-
-    HeaderField header = new HeaderField(name, value);
-    int headerSize = header.size();
+    int headerSize = HeaderField.sizeOf(name, value);
 
     // If the headerSize is greater than the max table size then it must be encoded literally
-    if (headerSize > headerTable.capacity()) {
-      int nameIndex = getNameIndex(name);
-      encodeLiteral(out, name, value, false, nameIndex);
+    if (headerSize > maxHeaderTableSize) {
+      HeaderEntry nameEntry = getHeaderEntry(name);	
+      HeaderEntry entry = getHeaderValue(nameEntry, value);
+      int index = headerIndex(entry);
+      encodeLiteral(out, name, value, false, index);
       return;
     }
 
-    int headerTableIndex = headerTable.getIndex(header);
-    if (headerTableIndex != -1) {
-      HeaderField headerField = headerTable.getEntry(headerTableIndex);
+    HeaderEntry nameEntry = getHeaderEntry(name);
+    HeaderEntry entry = getHeaderValue(nameEntry, value);
 
-      if (headerField.inReferenceSet) {
-        if (!headerField.emitted) {
-          headerField.emitted = true;
+    if (entry != null) {
+      if (entry.inReferenceSet) {
+        if (!entry.emitted) {
+          entry.emitted = true;
         } else {
           // The header was in the reference set and already emitted.
 
           // remove from reference set, emit, remove from reference set, emit
           for (int i = 0; i < 4; i++) {
-            encodeInteger(out, 0x80, 7, headerTableIndex);
+            encodeInteger(out, 0x80, 7, headerIndex(entry));
           }
 
           // inReferenceSet will be set to true after the header block is completed.  In the meantime,
           // inReferenceSet == false && emitted = true represents the state that we've seen this header at least
           // twice in this header block.
-          headerField.inReferenceSet = false;
+          entry.inReferenceSet = false;
         }
       } else {
-        if (headerField.emitted) {
+        if (entry.emitted) {
           // first remove it from the reference set
-          encodeInteger(out, 0x80, 7, headerTableIndex);
+          encodeInteger(out, 0x80, 7, headerIndex(entry));
         }
 
         // Section 4.2 - Indexed Header Field
-        encodeInteger(out, 0x80, 7, headerTableIndex);
-        headerField.emitted = true;
+        encodeInteger(out, 0x80, 7, headerIndex(entry));
+        entry.emitted = true;
       }
     } else {
-      int staticTableIndex = StaticTable.getIndex(header);
-      if (staticTableIndex != -1 && useIndexing) {
+      int index = StaticTable.getIndex(name, value);
+      if (index != -1) {
+        index += size();
+        if (useIndexing) {
+          ensureCapacity(out, headerSize);
+          add(name, value);
+        }
+  
         // Section 4.2 - Indexed Header Field
-        int nameIndex = staticTableIndex + headerTable.length();
-        ensureCapacity(out, headerSize);
-        add(header);
-        encodeInteger(out, 0x80, 7, nameIndex);
+        encodeInteger(out, 0x80, 7, index);
       } else {
-        int nameIndex = getNameIndex(name);
+        int nameIndex = getIndexByName(nameEntry, name);
         if (useIndexing) {
           ensureCapacity(out, headerSize);
         }
         encodeLiteral(out, name, value, useIndexing, nameIndex);
         if (useIndexing) {
-          add(header);
+          add(name, value);
         }
       }
     }
@@ -133,34 +143,34 @@ public final class Encoder {
    **/
   public void endHeaders(OutputStream out) throws IOException {
     // encode removed headers
-    for (int index = 1; index <= headerTable.length(); index++) {
-      HeaderField headerField = headerTable.getEntry(index);
-      if (headerField.emitted && !headerField.inReferenceSet) {
-        headerField.inReferenceSet = true;
+    for (HeaderEntry entry = head; entry != null; entry = entry.next) { 
+      if (entry.emitted && !entry.inReferenceSet) {
+        entry.inReferenceSet = true;
       }
-      if (headerField.inReferenceSet && !headerField.emitted) {
-        encodeInteger(out, 0x80, 7, index);
-        headerField.inReferenceSet = false;
+      if (entry.inReferenceSet && !entry.emitted) {
+        encodeInteger(out, 0x80, 7, headerIndex(entry));
+        entry.inReferenceSet = false;
       }
-      headerField.emitted = false;
+      entry.emitted = false;
     }
   }
 
+  private int size() {
+    return head == null ? 0 : tail.index - head.index + 1;
+  }
+  
   public void clearReferenceSet(OutputStream out) throws IOException {
     out.write(0x80);
+    
     // encode removed headers
-    for (int index = 1; index <= headerTable.length(); index++) {
-      HeaderField headerField = headerTable.getEntry(index);
-      headerField.inReferenceSet = false;
+    for (HeaderEntry entry = head; entry != null; entry = entry.next) { 
+      entry.inReferenceSet = false;
     }
   }
 
   public void setHeaderTableSize(OutputStream out, int size) throws IOException {
-    int neededSize = headerTable.size() - size;
-    if (neededSize > 0) {
-      ensureCapacity(out, neededSize);
-    }
-    headerTable.setCapacity(size);
+    maxHeaderTableSize = size;
+    ensureCapacity(out, 0);
   }
 
   /**
@@ -196,7 +206,7 @@ public final class Encoder {
    * 4.3.1. Literal Header Field without Indexing
    * 4.3.2. Literal Header Field with Incremental Indexing
    */
-  private void encodeLiteral(OutputStream out, byte[] name, byte[] value, boolean indexing, int nameIndex)
+  private void encodeLiteral(OutputStream out, String name, String value, boolean indexing, int nameIndex)
       throws IOException {
 
     encodeInteger(out, indexing ? 0x00 : 0x40, 6, nameIndex == -1 ? 0 : nameIndex);
@@ -214,140 +224,188 @@ public final class Encoder {
    * @param out The out to encode into
    * @param string The string to encode
    */
-  private void encodeStringLiteral(OutputStream out, byte[] string) throws IOException {
-    int huffmanLength = huffmanEncoder.getEncodedLength(string);
+  private void encodeStringLiteral(OutputStream out, String string) throws IOException {
+    byte[] bytes = string.getBytes(StandardCharsets.UTF_8);
 
-    if ((huffmanLength < string.length && !forceHuffmanOff) || forceHuffmanOn) {
+    int huffmanLength = huffmanEncoder.getEncodedLength(bytes);
+
+    if ((huffmanLength < bytes.length && !forceHuffmanOff) || forceHuffmanOn) {
       encodeInteger(out, 0x80, 7, huffmanLength);
-      huffmanEncoder.encode(string, out);
+      huffmanEncoder.encode(bytes, out);
     } else {
-      encodeInteger(out, 0x00, 7, string.length);
-      out.write(string, 0, string.length);
+      encodeInteger(out, 0x00, 7, bytes.length);
+      out.write(bytes, 0, bytes.length);
     }
   }
 
-  private int getNameIndex(byte[] name) {
-    int index = headerTable.getIndex(name);
-    if (index == -1) {
-      index = StaticTable.getIndex(name);
+  /**
+   * Attempt to lookup the first entry in the header table with a given name.
+   *
+   * @return  If found, the index, otherwise null.
+   **/
+  private HeaderEntry getHeaderEntry(String name) {
+    return headerByName.get(name);
+  }
+  
+  /**
+   * Given the first entry in the header table with a given name, returns the entry with the same name with the given
+   * value or null if no such entry exists.
+   */
+  private HeaderEntry getHeaderValue(HeaderEntry entry, String value) {
+    if (entry == null) {
+      return null;
+    }
+
+    HeaderEntry ret = null;
+    while (entry != null) {
+      if (HpackUtil.equals(entry.value, value)) {
+        // don't short-circuit in order to avoid leaking timing information
+        if (ret == null) {
+          ret = entry;
+        }
+      }
+      entry = entry.nextName;
+    }
+
+    return ret;
+  }
+
+  /**
+   * Attempt to lookup a value in the header table or the static table by name.
+   *
+   * @return  If found, the index, otherwise -1.
+   **/
+  private int getIndexByName(HeaderEntry nameEntry, String name) {
+    if (nameEntry != null) {
+      return headerIndex(nameEntry);	
+    } else {
+      int index = StaticTable.getIndex(name);
       if (index >= 0) {
-        index += headerTable.length();
+        return index + size();
+      } else {
+        return -1;
       }
     }
-    return index;
+  }
+
+  /**
+   * Maps an index in the header table (circular queue) to an actual header index
+   */
+  private int headerIndex(HeaderEntry entry) {
+    return entry.index - head.index + 1;
   }
 
   /**
    * Adds a new header entry with the given values to the header table.  Evicts the oldest entries in the table to make
    * room, if necessary.
    **/
-  private void add(HeaderField header) throws IOException {
-    header.inReferenceSet = false;
-    header.emitted = true;
-    headerTable.add(header);
+  private void add(String name, String value) throws IOException {
+    HeaderEntry entry = new HeaderEntry(name, value);
+    entry.inReferenceSet = false;
+    entry.emitted = true;
+    
+    if (head == null) {
+      entry.index = Integer.MAX_VALUE;
+      head = tail = entry;
+    } else {
+      entry.index = head.index - 1;
+      entry.next = head;
+      head.prev = entry;
+      head = entry;
+    }
+
+    headerTableSize += HeaderField.sizeOf(name, value);
+
+    // Add a name -> entry mapping
+    addHeaderNameMapping(entry);
+  }
+  
+  /**
+   * Adds a name -> entry mapping.  If a mapping already exists, the new mapping is
+   * prepended to the list of mappings by name.
+   **/
+  private void addHeaderNameMapping(HeaderEntry entry) {
+    entry.nextName = headerByName.remove(entry.name);
+    headerByName.put(entry.name, entry);
   }
 
   /**
-   * Ensure that the header table has enough room to hold 'headerSize' more bytes.
-   * Removes the oldest entry from the header table until sufficient space is available.
-   * If the entry is in the reference set and is marked as "to-be-emitted", its index is
-   * emitted in order to tell the peer to emit the header before it is removed from its
+   * Ensure that the header table has enough room to hold 'headerSize' more bytes.  Removes the oldest entry from the 
+   * header table until sufficient space is available.  If the entry is in the reference set and is marked as 
+   * "to-be-emitted", its index is emitted in order to tell the peer to emit the header before it is removed from its                               
    * header table as well.
-   */
+   **/
   private void ensureCapacity(OutputStream out, int headerSize) throws IOException {
-    while (headerTable.size() + headerSize > headerTable.capacity()) {
-      int index = headerTable.length();
-      if (index == 0) {
-        break;
-      }
-      HeaderField removed = headerTable.remove();
+    while (tail != null && (headerTableSize + headerSize > maxHeaderTableSize)) {
+      HeaderEntry removed = remove();
       if (removed.inReferenceSet && removed.emitted) {
         // evict the entry from the reference set and emit it
-        encodeInteger(out, 0x80, 7, index);
-        encodeInteger(out, 0x80, 7, index);
+        encodeInteger(out, 0x80, 7, headerIndex(removed));
+        encodeInteger(out, 0x80, 7, headerIndex(removed));
       }
+
+      headerTableSize -= HeaderField.sizeOf(removed.name, removed.value);
     }
   }
 
-  private static class EncoderTable extends HeaderTable {
-    // a map of header field to array offset
-    private Map<HeaderField, Integer> headerMap;
-
-    public EncoderTable(int initialCapacity) {
-      super(initialCapacity);
+  /**
+   * Removes the oldest entry from the header table.
+   **/  
+  private HeaderEntry remove() {
+    HeaderEntry entry = tail;
+    
+    tail = tail.prev;
+    if (tail != null) {
+      tail.next = null;
     }
 
+    removeHeaderNameMapping(entry.name);
+
+    return entry;
+  }
+  
+  /**
+   * Removes the last value in the list of values mapped to a name.  If there is only 1 value then the name is removed
+   * from the headerByName map.
+   **/
+  private void removeHeaderNameMapping(String name) {
+    HeaderEntry h = headerByName.get(name);
+    HeaderEntry prev = null;
+    while (h.nextName != null) {
+      prev = h;
+      h = h.nextName;
+    }
+    if (prev == null) {
+      headerByName.remove(name);
+    } else {
+      prev.nextName = null;
+    }
+  }
+
+  private static final class HeaderEntry extends ReferenceHeader {
+    
     /**
-     * Returns the lowest index value for the header field in the header table.
-     * Returns -1 if the header field is not in the header table.
+     * Next entry in insert order
      */
-    public int getIndex(HeaderField header) {
-      Integer offset = headerMap.get(header);
-      if (offset == null) {
-        return -1;
-      }
-      return getIndex(offset);
-    }
-
+    HeaderEntry next;
+    
     /**
-     * Returns the lowest index value for the header field name in the header table.
-     * Returns -1 if the header field name is not in the header table.
+     * Previous entry in insert order
      */
-    public int getIndex(byte[] name) {
-      int cursor = head;
-      while (cursor != tail) {
-        cursor--;
-        if (cursor < 0) {
-          cursor = headerTable.length - 1;
-        }
-        HeaderField entry = headerTable[cursor];
-        if (HpackUtil.equals(name, entry.name)) {
-          return getIndex(cursor);
-        }
-      }
-      return -1;
-    }
-
-    private int getIndex(int offset) {
-      if (offset == -1) {
-        return offset;
-      } else if (offset < head) {
-        return head - offset;
-      } else {
-        return headerTable.length - offset + head;
-      }
-    }
-
-    @Override
-    public void add(HeaderField header) {
-      int index = head;
-      super.add(header);
-      if (length() > 0) {
-        // header was successfully added
-        headerMap.put(header, index);
-      }
-    }
-
-    @Override
-    public void setCapacity(int capacity) {
-      super.setCapacity(capacity);
-      headerMap = new HashMap<HeaderField, Integer>(headerTable.length, 1);
-      for (int i = tail; i < head; i++) {
-        headerMap.put(headerTable[i], i);
-      }
-    }
-
-    @Override
-    public HeaderField remove() {
-      HeaderField removed = super.remove();
-      headerMap.remove(removed);
-      return removed;
-    }
-
-    @Override
-    public void clear() {
-      super.clear();
-      headerMap.clear();
+    HeaderEntry prev;
+    
+    /**
+     * Next entry in name order.
+     */
+    HeaderEntry nextName;
+    
+    /**
+     * Used to calculate index of the entry.
+     */
+    int index;
+    
+    HeaderEntry(String name, String value) {
+      super(name, value);
     }
   }
 }
