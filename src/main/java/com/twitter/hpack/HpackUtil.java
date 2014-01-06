@@ -15,7 +15,11 @@
  */
 package com.twitter.hpack;
 
+import java.nio.charset.Charset;
+
 final class HpackUtil {
+
+  static final Charset ISO_8859_1 = Charset.forName("ISO-8859-1");
 
   // TODO(jpinner) move this into HTTP/2.0
   static final int DEFAULT_HEADER_TABLE_SIZE = 4096;
@@ -32,6 +36,15 @@ final class HpackUtil {
       c |= (s1[i] ^ s2[i]);
     }
     return c == 0;
+  }
+
+  /**
+   * Checks that the specified object reference is not {@code null}.
+   */
+  static <T> T requireNonNull(T obj) {
+    if (obj == null)
+      throw new NullPointerException();
+    return obj;
   }
 
   // Appendix C: Huffman Codes For Requests

@@ -15,9 +15,8 @@
  */
 package com.twitter.hpack;
 
-import java.nio.charset.StandardCharsets;
-
-import static java.util.Objects.requireNonNull;
+import static com.twitter.hpack.HpackUtil.ISO_8859_1;
+import static com.twitter.hpack.HpackUtil.requireNonNull;
 
 class HeaderField implements Comparable<HeaderField> {
 
@@ -35,9 +34,9 @@ class HeaderField implements Comparable<HeaderField> {
   boolean emitted = false;
   boolean inReferenceSet = false;
 
-  // This constructor can only be used if name and value are ASCII encoded.
+  // This constructor can only be used if name and value are ISO-8859-1 encoded.
   HeaderField(String name, String value) {
-    this(name.getBytes(StandardCharsets.US_ASCII), value.getBytes(StandardCharsets.US_ASCII));
+    this(name.getBytes(ISO_8859_1), value.getBytes(ISO_8859_1));
   }
 
   HeaderField(byte[] name, byte[] value) {

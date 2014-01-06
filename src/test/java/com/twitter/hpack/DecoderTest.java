@@ -17,11 +17,11 @@ package com.twitter.hpack;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 
 import org.junit.Before;
 import org.junit.Test;
 
+import static com.twitter.hpack.HpackUtil.ISO_8859_1;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -44,7 +44,7 @@ public class DecoderTest {
   }
 
   private static byte[] getBytes(String s) {
-    return s.getBytes(StandardCharsets.US_ASCII);
+    return s.getBytes(ISO_8859_1);
   }
 
   private void decode(String encoded) throws IOException {
