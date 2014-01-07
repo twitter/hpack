@@ -6,6 +6,8 @@
     <groupId>com.twitter</groupId>
     <artifactId>hpack</artifactId>
     <version>0.5.2-SNAPSHOT</version>
+
+    <name>HPACK</name>
     <url>http://github.com/twitter/hpack</url>
     <description>Header Compression for HTTP/2.0</description>
 
