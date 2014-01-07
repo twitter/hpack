@@ -3,6 +3,18 @@ HPACK [![Build Status](https://travis-ci.org/twitter/hpack.png?branch=master)](h
 
 [Header Compression for HTTP/2.0](http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-05)
 
+## Download
+
+HPACK can be downloaded from the Maven central repository. Add the following dependency section to your pom.xml file:
+
+```xml
+<dependency>
+    <groupId>com.twitter</groupId>
+    <artifactId>hpack</artifactId>
+    <version>0.5.2</version>
+</dependency>
+```
+
 ## Getting Started
 
 This library provides support for compression of header sets into header blocks. The following code fragment demonstrates the use of Encoder and Decoder:
