@@ -48,7 +48,8 @@ final class HpackUtil {
   }
 
   // Appendix C: Huffman Codes For Requests
-  private static final int[] REQUEST_CODES = {
+  // http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-05#appendix-C
+  static final int[] REQUEST_CODES = {
       0x7ffffba,
       0x7ffffbb,
       0x7ffffbc,
@@ -307,7 +308,7 @@ final class HpackUtil {
       0x3ffffdb
   };
 
-  private static final byte[] REQUEST_CODE_LENGTHS = {
+  static final byte[] REQUEST_CODE_LENGTHS = {
       27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27,
       27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27, 27,
        8, 12, 14, 15, 15,  6,  7, 15, 11, 11, 10, 11,  8,  6,  5,  4,
@@ -326,7 +327,8 @@ final class HpackUtil {
       26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26};
 
   // Appendix D: Huffman Codes For Responses
-  private static final int[] RESPONSE_CODES = {
+  // http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-05#appendix-D
+  static final int[] RESPONSE_CODES = {
       0x1ffffbc,
       0x1ffffbd,
       0x1ffffbe,
@@ -585,7 +587,7 @@ final class HpackUtil {
       0xffffdc
   };
 
-  private static final byte[] RESPONSE_CODE_LENGTHS = {
+  static final byte[] RESPONSE_CODE_LENGTHS = {
       25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25,
       25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25,
        4, 12,  7, 13, 14,  9, 10, 13,  9,  9, 12, 11,  6,  6,  6,  7,
@@ -602,11 +604,6 @@ final class HpackUtil {
       24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24,
       24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24,
       24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24};
-
-  static HuffmanEncoder REQUEST_ENCODER = new HuffmanEncoder(REQUEST_CODES, REQUEST_CODE_LENGTHS);
-  static HuffmanDecoder REQUEST_DECODER = new HuffmanDecoder(REQUEST_CODES, REQUEST_CODE_LENGTHS);
-  static HuffmanEncoder RESPONSE_ENCODER = new HuffmanEncoder(RESPONSE_CODES, RESPONSE_CODE_LENGTHS);
-  static HuffmanDecoder RESPONSE_DECODER = new HuffmanDecoder(RESPONSE_CODES, RESPONSE_CODE_LENGTHS);
 
   private HpackUtil() {
     // utility class

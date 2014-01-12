@@ -22,6 +22,11 @@ final class HuffmanDecoder {
 
   private final Node root = new Node();
 
+  /**
+   * Creates a new Huffman decoder with the specified Huffman coding.
+   * @param codes   the Huffman codes indexed by symbol
+   * @param lengths the length of each Huffman code
+   */
   HuffmanDecoder(int[] codes, byte[] lengths) {
     buildTree(codes, lengths);
   }
@@ -56,6 +61,14 @@ final class HuffmanDecoder {
     }
   }
 
+  /**
+   * Decompresses the given Huffman coded string literal.
+   * @param  buf the string literal to be decoded
+   * @return the output stream for the compressed data
+   * @throws IOException if an I/O error occurs. In particular,
+   *         an <code>IOException</code> may be thrown if the
+   *         output stream has been closed.
+   */
   public byte[] decode(byte[] buf) throws IOException {
     // FIXME
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -98,19 +111,21 @@ final class HuffmanDecoder {
   private static final class Node {
 
     // Internal nodes have children
-    private Node[] children;
+    private final Node[] children;
 
     // Terminal nodes have a symbol
-    int symbol;
+    private final int symbol;
 
     // Number of bits represented in the terminal node
-    int terminalBits;
+    private final int terminalBits;
 
     /**
      * Construct an internal node
      */
     Node() {
       children = new Node[256];
+      symbol = 0;
+      terminalBits = 0;
     }
 
     /**
@@ -120,6 +135,7 @@ final class HuffmanDecoder {
      * @param bits    length of Huffman code in bits
      */
     Node(int symbol, int bits) {
+      this.children = null;
       this.symbol = symbol;
       int b = bits & 0x07;
       this.terminalBits = b == 0 ? 8 : b;

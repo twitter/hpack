@@ -23,17 +23,53 @@ final class HuffmanEncoder {
   private final int[] codes;
   private final byte[] lengths;
 
+  /**
+   * Creates a new Huffman encoder with the specified Huffman coding.
+   * @param codes   the Huffman codes indexed by symbol
+   * @param lengths the length of each Huffman code
+   */
   public HuffmanEncoder(int[] codes, byte[] lengths) {
     this.codes = codes;
     this.lengths = lengths;
   }
 
-  public void encode(byte[] data, OutputStream out) throws IOException {
+  /**
+   * Compresses the input string literal using the Huffman coding.
+   * @param  out  the output stream for the compressed data
+   * @param  data the string literal to be Huffman encoded
+   * @throws IOException if an I/O error occurs.
+   * @see    com.twitter.hpack.HuffmanEncoder#encode(OutputStream, byte[], int, int)
+   */
+  public void encode(OutputStream out, byte[] data) throws IOException {
+    encode(out, data, 0, data.length);
+  }
+
+  /**
+   * Compresses the input string literal using the Huffman coding.
+   * @param  out  the output stream for the compressed data
+   * @param  data the string literal to be Huffman encoded
+   * @param  off  the start offset in the data
+   * @param  len  the number of bytes to encode
+   * @throws IOException if an I/O error occurs. In particular,
+   *         an <code>IOException</code> may be thrown if the
+   *         output stream has been closed.
+   */
+  public void encode(OutputStream out, byte[] data, int off, int len) throws IOException {
+    if (out == null) {
+      throw new NullPointerException("out");
+    } else if (data == null) {
+      throw new NullPointerException("data");
+    } else if (off < 0 || len < 0 || (off + len) < 0 || off > data.length || (off + len) > data.length) {
+      throw new IndexOutOfBoundsException();
+    } else if (len == 0) {
+      return;
+    }
+
     long current = 0;
     int n = 0;
 
-    for (int i = 0; i < data.length; i++) {
-      int b = data[i] & 0xFF;
+    for (int i = 0; i < len; i++) {
+      int b = data[off + i] & 0xFF;
       int code = codes[b];
       int nbits = lengths[b];
 
@@ -49,19 +85,24 @@ final class HuffmanEncoder {
 
     if (n > 0) {
       current <<= (8 - n);
-      current |= (0xFF >>> n);
+      current |= (0xFF >>> n); // this should be EOS symbol
       out.write((int)current);
     }
   }
 
-  public int getEncodedLength(byte[] bytes) {
-    long len = 0;
-
-    for (int i = 0; i < bytes.length; i++) {
-      int b = bytes[i] & 0xFF;
-      len += lengths[b];
+  /**
+   * Returns the number of bytes required to Huffman encode the input string literal.
+   * @param  data the string literal to be Huffman encoded
+   * @return the number of bytes required to Huffman encode <code>data</code>
+   */
+  public int getEncodedLength(byte[] data) {
+    if (data == null) {
+      throw new NullPointerException("data");
     }
-
+    long len = 0;
+    for (byte b : data) {
+      len += lengths[b & 0xFF];
+    }
     return (int)((len + 7) >> 3);
   }
 }

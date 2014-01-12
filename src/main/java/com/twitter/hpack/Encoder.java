@@ -59,7 +59,7 @@ public final class Encoder {
     if (maxHeaderTableSize < 0) {
       throw new IllegalArgumentException("Illegal Capacity: "+ maxHeaderTableSize);
     }
-    this.huffmanEncoder = server ? HpackUtil.RESPONSE_ENCODER : HpackUtil.REQUEST_ENCODER;
+    this.huffmanEncoder = server ? Huffman.RESPONSE_ENCODER : Huffman.REQUEST_ENCODER;
     this.useIndexing = useIndexing;
     this.forceHuffmanOn = forceHuffmanOn;
     this.forceHuffmanOff = forceHuffmanOff;
@@ -234,7 +234,7 @@ public final class Encoder {
 
     if ((huffmanLength < string.length && !forceHuffmanOff) || forceHuffmanOn) {
       encodeInteger(out, 0x80, 7, huffmanLength);
-      huffmanEncoder.encode(string, out);
+      huffmanEncoder.encode(out, string);
     } else {
       encodeInteger(out, 0x00, 7, string.length);
       out.write(string, 0, string.length);

@@ -38,10 +38,10 @@ public class HuffmanTest {
 
   @Before
   public void setUp() {
-    requestEncoder = HpackUtil.REQUEST_ENCODER;
-    requestDecoder = HpackUtil.REQUEST_DECODER;
-    responseEncoder = HpackUtil.RESPONSE_ENCODER;
-    responseDecoder = HpackUtil.RESPONSE_DECODER;
+    requestEncoder = Huffman.REQUEST_ENCODER;
+    requestDecoder = Huffman.REQUEST_DECODER;
+    responseEncoder = Huffman.RESPONSE_ENCODER;
+    responseDecoder = Huffman.RESPONSE_DECODER;
   }
 
   @Test
@@ -76,7 +76,7 @@ public class HuffmanTest {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     DataOutputStream dos = new DataOutputStream(baos);
 
-    encoder.encode(buf, dos);
+    encoder.encode(dos, buf);
 
     byte[] actualBytes = decoder.decode(baos.toByteArray());
 

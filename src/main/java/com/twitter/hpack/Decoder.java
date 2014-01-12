@@ -66,7 +66,7 @@ public final class Decoder {
   }
 
   public Decoder(boolean server, int maxHeaderSize, int maxHeaderTableSize) {
-    this.huffmanDecoder = server ? HpackUtil.REQUEST_DECODER : HpackUtil.RESPONSE_DECODER;
+    this.huffmanDecoder = server ? Huffman.REQUEST_DECODER : Huffman.RESPONSE_DECODER;
     this.maxHeaderSize = maxHeaderSize;
     headerTable = new HeaderTable(maxHeaderTableSize);
     reset();
