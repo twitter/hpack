@@ -39,15 +39,12 @@ import com.google.gson.JsonParseException;
 
 final class TestCase {
 
-  private static final String RESPONSE = "response";
-
   private static final Gson GSON = new GsonBuilder()
       .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
       .registerTypeAdapter(HeaderField.class, new HeaderFieldDeserializer())
       .create();
 
   int maxHeaderSize;
-  String context;
   boolean useIndexing = true;
   boolean forceHuffmanOn;
   boolean forceHuffmanOff;
@@ -71,7 +68,7 @@ final class TestCase {
     for (int i = 0; i < headerBlocks.size(); i++) {
       HeaderBlock headerBlock = headerBlocks.get(i);
 
-      byte[] actual = encode(encoder, headerBlock.getHeaders(), headerBlock.clearReferenceSet());
+      byte[] actual = encode(encoder, headerBlock.getHeaders(), headerBlock.clearReferenceSet(), headerBlock.getMaxHeaderTableSize());
 
       if (!Arrays.equals(actual, headerBlock.encodedBytes)) {
         throw new AssertionError("\nEXPECTED: " + headerBlock.getEncodedStr() +
@@ -105,7 +102,7 @@ final class TestCase {
   void encode(Encoder encoder) throws Exception {
     for (int i = 0; i < headerBlocks.size(); i++) {
       HeaderBlock headerBlock = headerBlocks.get(i);
-      encode(encoder, headerBlock.getHeaders(), headerBlock.clearReferenceSet());
+      encode(encoder, headerBlock.getHeaders(), headerBlock.clearReferenceSet(), headerBlock.getMaxHeaderTableSize());
     }
   }
 
@@ -117,33 +114,33 @@ final class TestCase {
   }
 
   private Encoder createEncoder() {
-    boolean server = RESPONSE.equalsIgnoreCase(context);
-
     int maxHeaderSize = this.maxHeaderSize;
     if (maxHeaderSize == 0) {
       maxHeaderSize = HpackUtil.DEFAULT_HEADER_TABLE_SIZE;
     }
 
-    return new Encoder(server, maxHeaderSize, useIndexing, forceHuffmanOn, forceHuffmanOff);
+    return new Encoder(maxHeaderSize, useIndexing, forceHuffmanOn, forceHuffmanOff);
   }
 
   private Decoder createDecoder() {
-    boolean server = !RESPONSE.equalsIgnoreCase(context);
-
     int maxHeaderSize = this.maxHeaderSize;
     if (maxHeaderSize == 0) {
       maxHeaderSize = HpackUtil.DEFAULT_HEADER_TABLE_SIZE;
     }
 
-    return new Decoder(server, 8192, maxHeaderSize);
+    return new Decoder(8192, maxHeaderSize);
   }
 
-  private static byte[] encode(Encoder encoder, List<HeaderField> headers, boolean clearReferenceSet)
+  private static byte[] encode(Encoder encoder, List<HeaderField> headers, boolean clearReferenceSet, int maxHeaderTableSize)
       throws IOException {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
     if (clearReferenceSet) {
       encoder.clearReferenceSet(baos);
+    }
+
+    if (maxHeaderTableSize != -1) {
+      encoder.setHeaderTableSize(baos, maxHeaderTableSize);
     }
 
     for (HeaderField e: headers) {
@@ -173,12 +170,17 @@ final class TestCase {
 
   static class HeaderBlock {
     private boolean clearReferenceSet;
+    private int maxHeaderTableSize = -1;
     private byte[] encodedBytes;
     private List<String> encoded;
     private List<HeaderField> headers;
 
     public boolean clearReferenceSet() {
       return clearReferenceSet;
+    }
+
+    private int getMaxHeaderTableSize() {
+      return maxHeaderTableSize;
     }
 
     public String getEncodedStr() {

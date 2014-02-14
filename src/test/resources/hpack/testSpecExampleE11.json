@@ -1,6 +1,5 @@
 {
   "max_header_size": 8192,
-  "context": "request",
   "force_huffman_off": true,
   "header_blocks":
   [
@@ -8,10 +7,10 @@
       "headers": [
         { "custom-key": "custom-header" }
       ],
-      "encoded": [ 
+      "encoded": [
         "000a 6375 7374 6f6d 2d6b 6579 0d63 7573",
-        "746f 6d2d 6865 6164 6572" 
-      ]       
+        "746f 6d2d 6865 6164 6572"
+      ]
     }
   ]
 }

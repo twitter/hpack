@@ -24,7 +24,7 @@ class HeaderTable {
   int head;
   int tail;
   private int size;
-  private int capacity;
+  private int capacity = -1; // ensure setCapacity creates headerTable
 
   HeaderTable(int initialCapacity) {
     setCapacity(initialCapacity);
@@ -134,16 +134,32 @@ class HeaderTable {
     if (capacity < 0) {
       throw new IllegalArgumentException("Illegal Capacity: "+ capacity);
     }
+
+    // initially capacity will be -1 so init won't return here
+    if (this.capacity == capacity) {
+      return;
+    }
+
+    // initially size will be 0 so remove won't be called
+    if (capacity == 0) {
+      clear();
+    } else {
+      while (size > capacity) {
+        remove();
+      }
+    }
+
     int maxEntries = capacity / HEADER_ENTRY_OVERHEAD;
     if (capacity % HEADER_ENTRY_OVERHEAD != 0) {
       maxEntries++;
     }
-    HeaderField[] tmp = new HeaderField[maxEntries];
 
-    // initially size will be 0 so remove won't be called
-    while (size > capacity) {
-      remove();
+    // check if capacity change requires us to reallocate the headerTable
+    if (headerTable != null && headerTable.length == maxEntries) {
+      return;
     }
+
+    HeaderField[] tmp = new HeaderField[maxEntries];
 
     // initially length will be 0 so there will be no copy
     int len = length();
@@ -155,6 +171,7 @@ class HeaderTable {
         cursor = 0;
       }
     }
+
     this.tail = 0;
     this.head = tail + len;
     this.capacity = capacity;

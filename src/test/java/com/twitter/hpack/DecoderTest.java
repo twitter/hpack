@@ -54,7 +54,7 @@ public class DecoderTest {
 
   @Before
   public void setUp() {
-    decoder = new Decoder(true, MAX_HEADER_SIZE);
+    decoder = new Decoder(MAX_HEADER_SIZE);
     mockListener = mock(HeaderListener.class);
   }
 
@@ -79,6 +79,17 @@ public class DecoderTest {
   public void testInsidiousIndex() throws IOException {
     // Insidious index so the last shift causes sign overflow
     decode("FF8080808008");
+  }
+
+  @Test(expected = IOException.class)
+  public void testIllegalEncodeContextUpdate() throws IOException {
+    decode("8081");
+  }
+
+  @Test(expected = IOException.class)
+  public void testInsidiousMaxHeaderSize() throws IOException {
+    // max header table size sign overflow
+    decode("807F80FFFFFF08");
   }
 
   @Test(expected = IOException.class)

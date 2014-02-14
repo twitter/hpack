@@ -1,5 +1,4 @@
 {
-  "context": "request",
   "force_huffman_on": true,
   "header_blocks":
   [
@@ -13,11 +12,11 @@
         { "user-agent": "hpack-test-case" },
         { "x-hello": "world" }
       ],
-      "encoded": [ 
+      "encoded": [
         "0084f666d847881f3468e58912dd3f0382c86386008482731d0784ce31743f23",
         "88f3f3f3f3f3f3f3373e8acdc84f2962308ca944070085f397315adb84d9af5e1f"
-      ]        
-    }, 
+      ]
+    },
     {
       "headers": [
         { "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8" },
@@ -28,7 +27,7 @@
         { ":host": "blog.summerwind.jp" },
         { "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/30.0.1599.69 Safari/537.36" }
       ],
-      "encoded": [ 
+      "encoded": [
         "19b688f9c4338e8be9439cb5251153581e79c745ffcf3d17d287396a4a22a6b03cf45f",
         "5795a5259d2ad119086c37bba7fa0febabcad292bf178dcbd54ee9c0715a223d30c139",
         "ff1993164bf8f0e91675795a5257d3c51d5e569494ff2187d11e72a321b4bf00874b58",

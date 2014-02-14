@@ -1,6 +1,5 @@
 {
   "max_header_size": 8192,
-  "context": "request",
   "force_huffman_off": true,
   "header_blocks":
   [
@@ -8,9 +7,9 @@
       "headers": [
         { ":method": "GET" }
       ],
-      "encoded": [ 
+      "encoded": [
         "82"
-      ]       
+      ]
     }
   ]
 }

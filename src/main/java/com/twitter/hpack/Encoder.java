@@ -29,28 +29,24 @@ public final class Encoder {
   private final boolean forceHuffmanOn;
   private final boolean forceHuffmanOff;
 
-  // the huffman encoder used to encode literal values
-  private final HuffmanEncoder huffmanEncoder;
-
   // a linked hash map of header fields
   private final HeaderEntry[] headerTable = new HeaderEntry[BUCKET_SIZE];
   private final HeaderEntry head = new HeaderEntry(-1, EMPTY, EMPTY, Integer.MAX_VALUE, null);
   private int size;
   private int capacity;
 
-  public Encoder(boolean server) {
-    this(server, HpackUtil.DEFAULT_HEADER_TABLE_SIZE);
+  public Encoder() {
+    this(HpackUtil.DEFAULT_HEADER_TABLE_SIZE);
   }
 
-  public Encoder(boolean server, int maxHeaderTableSize) {
-    this(server, maxHeaderTableSize, true, false, false);
+  public Encoder(int maxHeaderTableSize) {
+    this(maxHeaderTableSize, true, false, false);
   }
 
   /**
    * Constructor for testing only.
    */
   Encoder(
-      boolean server,
       int maxHeaderTableSize,
       boolean useIndexing,
       boolean forceHuffmanOn,
@@ -59,7 +55,6 @@ public final class Encoder {
     if (maxHeaderTableSize < 0) {
       throw new IllegalArgumentException("Illegal Capacity: "+ maxHeaderTableSize);
     }
-    this.huffmanEncoder = server ? Huffman.RESPONSE_ENCODER : Huffman.REQUEST_ENCODER;
     this.useIndexing = useIndexing;
     this.forceHuffmanOn = forceHuffmanOn;
     this.forceHuffmanOff = forceHuffmanOff;
@@ -165,6 +160,7 @@ public final class Encoder {
       entry = entry.before;
     }
     out.write(0x80);
+    out.write(0x80);
   }
 
   public void setHeaderTableSize(OutputStream out, int maxHeaderTableSize) throws IOException {
@@ -176,6 +172,8 @@ public final class Encoder {
       ensureCapacity(out, neededSize);
     }
     this.capacity = maxHeaderTableSize;
+    out.write(0x80);
+    encodeInteger(out, 0x00, 7, maxHeaderTableSize);
   }
 
   /**
@@ -230,11 +228,11 @@ public final class Encoder {
    * @param string The string to encode
    */
   private void encodeStringLiteral(OutputStream out, byte[] string) throws IOException {
-    int huffmanLength = huffmanEncoder.getEncodedLength(string);
+    int huffmanLength = Huffman.ENCODER.getEncodedLength(string);
 
     if ((huffmanLength < string.length && !forceHuffmanOff) || forceHuffmanOn) {
       encodeInteger(out, 0x80, 7, huffmanLength);
-      huffmanEncoder.encode(out, string);
+      Huffman.ENCODER.encode(out, string);
     } else {
       encodeInteger(out, 0x00, 7, string.length);
       out.write(string, 0, string.length);

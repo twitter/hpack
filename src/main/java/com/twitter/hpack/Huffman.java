@@ -15,32 +15,20 @@
  */
 package com.twitter.hpack;
 
-import static com.twitter.hpack.HpackUtil.REQUEST_CODE_LENGTHS;
-import static com.twitter.hpack.HpackUtil.REQUEST_CODES;
-import static com.twitter.hpack.HpackUtil.RESPONSE_CODE_LENGTHS;
-import static com.twitter.hpack.HpackUtil.RESPONSE_CODES;
+import static com.twitter.hpack.HpackUtil.HUFFMAN_CODE_LENGTHS;
+import static com.twitter.hpack.HpackUtil.HUFFMAN_CODES;
 
 public final class Huffman {
 
   /**
-   * Huffman Decoder used in the client to server direction.
+   * Huffman Decoder
    */
-  public static final HuffmanDecoder REQUEST_DECODER = new HuffmanDecoder(REQUEST_CODES, REQUEST_CODE_LENGTHS);
+  public static final HuffmanDecoder DECODER = new HuffmanDecoder(HUFFMAN_CODES, HUFFMAN_CODE_LENGTHS);
 
   /**
-   * Huffman Encoder used in the client to server direction.
+   * Huffman Encoder
    */
-  public static final HuffmanEncoder REQUEST_ENCODER = new HuffmanEncoder(REQUEST_CODES, REQUEST_CODE_LENGTHS);
-
-  /**
-   * Huffman Decoder used in the server to client direction.
-   */
-  public static final HuffmanDecoder RESPONSE_DECODER = new HuffmanDecoder(RESPONSE_CODES, RESPONSE_CODE_LENGTHS);
-
-  /**
-   * Huffman Encoder used in the server to client direction.
-   */
-  public static final HuffmanEncoder RESPONSE_ENCODER = new HuffmanEncoder(RESPONSE_CODES, RESPONSE_CODE_LENGTHS);
+  public static final HuffmanEncoder ENCODER = new HuffmanEncoder(HUFFMAN_CODES, HUFFMAN_CODE_LENGTHS);
 
   private Huffman() {
     // utility class

@@ -1,6 +1,5 @@
 {
   "max_header_size": 8192,
-  "context": "request",
   "use_indexing": false,
   "force_huffman_off": true,
   "header_blocks":
@@ -9,9 +8,9 @@
       "headers": [
         { ":path": "/sample/path" }
       ],
-      "encoded": [ 
+      "encoded": [
         "440c 2f73 616d 706c 652f 7061 7468"
-      ]       
+      ]
     }
   ]
 }

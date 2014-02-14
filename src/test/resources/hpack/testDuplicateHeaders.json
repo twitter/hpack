@@ -1,6 +1,5 @@
 {
-  "context": "request",
-  "force_huffman_on": true,  
+  "force_huffman_on": true,
   "header_blocks":
   [
     {
@@ -8,8 +7,8 @@
         { ":path": "/somepath" },
         { "x-custom": "val" }
       ],
-      "encoded": [ "048608374172239f0086f3953ac22dd383e685ff" ]      
-    }, 
+      "encoded": [ "048608374172239f0086f3953ac22dd383e685ff" ]
+    },
     {
       "headers": [
         { ":path": "/somepath" },
@@ -17,7 +16,7 @@
         { "x-custom": "val" }
       ],
       "encoded": [ "81818181" ]
-    }, 
+    },
     {
       "headers": [
         { ":path": "/somepath" },
@@ -25,7 +24,7 @@
         { "foo": "bar" },
         { "x-custom": "val" }
       ],
-      "encoded": [ "0082c5ad82bd0f82828282" ]      
+      "encoded": [ "0082c5ad82bd0f82828282" ]
     },
     {
       "headers": [
@@ -63,6 +62,6 @@
         { "x-custom2": "val" }
       ],
       "encoded": [ "0087f3953ac22dd0ff83e685ff818181818283" ]
-    }      
+    }
   ]
 }

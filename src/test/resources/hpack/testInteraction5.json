@@ -1,5 +1,4 @@
 {
-  "context": "request",
   "force_huffman_on": true,
   "header_blocks":
   [
@@ -14,7 +13,7 @@
         { "accept-language": "en-US,en;q=0.5" },
         { "accept-encoding": "gzip, deflate" },
         { "connection": "keep-alive" }
-      ],      
+      ],
       "encoded": [
         "82870084f666d847861bd1e844b74f873dbeef6faa96b405042f47faef4254c8b619f5",
         "747c19115f477a13d1f4f0e8fdf418a4afaba1fcfd86a485ff7d1ee14f2681ca6294c5",
@@ -50,7 +49,7 @@
         { "connection": "keep-alive" },
         { "referer": "http://www.ebay.com/" }
       ],
-      "encoded": [ 
+      "encoded": [
         "018b1bd1e92c22d7a86044b74f08990d9d2a5ac88b221ab96d46100394c703183e10",
         "6cb4d04e2ecb079a5688c841cccba55a23210febabcad292be9fe83faeaf2b4a4a3f",
         "3f008ece3177b0036db620de8f4225ba0785898b"
@@ -70,7 +69,7 @@
         { "referer": "http://www.ebay.com/" },
         { "cookie": "ebay=%5Esbf%3D%23%5E; dp1=bpbf/%238000000000005276504d^u1p/QEBfX0BAX19AQA**5276504d^; cssg=c67883f113a0a56964e646c6ffaa1abe; s=CgAD4ACBQlm5NYzY3ODgzZjExM2EwYTU2OTY0ZTY0NmM2ZmZhYTFhYmUBSgAYUJZuTTUwOTUxY2NkLjAuMS4zLjE1MS4zLjAuMeN+7JE*; nonsession=CgAFMABhSdlBNNTA5NTFjY2QuMC4xLjEuMTQ5LjMuMC4xAMoAIFn7Hk1jNjc4ODNmMTEzYTBhNTY5NjRlNjQ2YzZmZmFhMWFjMQDLAAFQlSPVMX8u5Z8*" }
       ],
-      "encoded": [ 
+      "encoded": [
         "048a7b798bc837a3d0896e9f048807b798be1e8c487f2fffbe011bd1e96c947742fc64",
         "9bb643cd251ddd5d1838d6deebf1090f3565294a5294a529683d54d059f0fff753383e",
         "dddd78fecbd7bff66b37fdb7ff5fd507aa9a0b3e1ffef5742610cad4d35575cd898d32",
@@ -81,7 +80,7 @@
         "f1df47cfc7871fe1fedaf7f64fe7f2e3ddaf7f8fda8f971efd7bfb27f3dfdeddff0e0c",
         "abdfc8dc7e7c533fd3b7e7a77f8f77aff3c7af3f9f8ff28f9f1fbafe7c7ec7fe7aff9a",
         "7f9a70cfbff5c38f7fdbb7e5bf7f0fb2fc3ebf9effdd7ad1fe57fd7f8687"
-      ]      
+      ]
     },
     {
       "headers": [
@@ -96,7 +95,7 @@
         { "connection": "keep-alive" },
         { "referer": "http://www.ebay.com/" }
       ],
-      "encoded": [ "038b7106f47a42288a9244b74f0389046c0e526010264ac7838485" ]      
+      "encoded": [ "038b7106f47a42288a9244b74f0389046c0e526010264ac7838485" ]
     },
     {
       "headers": [
@@ -111,10 +110,10 @@
         { "connection": "keep-alive" },
         { "referer": "http://www.ebay.com/" }
       ],
-      "encoded": [ 
+      "encoded": [
         "01b3046c0e52601a35d00394c7bb06b7058c03ded5ab047a076f84c1f0d32fd08f2b8d",
         "77d45996aa65de1a216bb8d417ce6291cccb82"
       ]
-    }      
-  ]  
+    }
+  ]
 }

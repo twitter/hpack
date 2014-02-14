@@ -1,6 +1,5 @@
 {
   "max_header_size": 8192,
-  "context": "request",
   "force_huffman_on": true,
   "header_blocks":
   [
@@ -11,10 +10,10 @@
         { ":path": "/" },
         { ":authority": "www.example.com" }
       ],
-      "encoded": [ 
-        "8287 8604 8bdb 6d88 3e68 d1cb 1225 ba7f" 
-      ]       
-    }, 
+      "encoded": [
+        "8287 8604 8bdb 6d88 3e68 d1cb 1225 ba7f"
+      ]
+    },
     {
       "headers": [
         { ":method": "GET" },
@@ -23,10 +22,10 @@
         { ":authority": "www.example.com" },
         { "cache-control": "no-cache" }
       ],
-      "encoded": [ 
+      "encoded": [
         "1b86 6365 4a13 98ff"
       ]
-    }, 
+    },
     {
       "clear_reference_set": true,
       "headers": [
@@ -36,9 +35,9 @@
         { ":authority": "www.example.com" },
         { "custom-key": "custom-value" }
       ],
-      "encoded": [ 
-        "8085 8c8b 8400 884e b08b 7497 90fa 7f89",
-        "4eb0 8b74 979a 17a8 ff"
+      "encoded": [
+        "8080 858c 8b84 0088 4eb0 8b74 9790 fa7f",
+        "894e b08b 7497 9a17 a8ff"
       ]
     }
   ]

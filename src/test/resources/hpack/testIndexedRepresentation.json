@@ -1,5 +1,4 @@
 {
-  "context": "request",
   "header_blocks":
   [
     {
@@ -7,20 +6,24 @@
         { ":scheme": "http" }
       ],
       "encoded": [ "86" ]
-    }, {
+    },
+    {
       "headers": [
         { ":scheme": "http" }
       ],
       "encoded": [ "" ]
-    }, {
+    },
+    {
       "headers": [
       ],
       "encoded": [ "81" ]
-    }, {
+    },
+    {
       "headers": [
       ],
       "encoded": [ "" ]
-    }, {
+    },
+    {
       "headers": [
         { ":scheme": "http" },
         { ":scheme": "http" }

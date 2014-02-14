@@ -1,5 +1,4 @@
 {
-  "context": "request",
   "header_blocks":
   [
     {
@@ -8,13 +7,15 @@
         { "x-custom": "foo " }
       ],
       "encoded": [ "0486088c22e4473f0086f3953ac22dd383c5ade8" ]
-    }, {
+    },
+    {
       "headers": [
         { ":path": "/" },
         { "x-custom": "bar" }
       ],
       "encoded": [ "860282bd0f8384" ]
-    }, {
+    },
+    {
       "headers": [
         { ":path": "/testpath"},
         { "x-custom": "foo" }

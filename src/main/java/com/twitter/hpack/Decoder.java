@@ -26,7 +26,6 @@ public final class Decoder {
 
   private static final byte[] EMPTY = {};
 
-  private final HuffmanDecoder huffmanDecoder;
   private final HeaderTable headerTable;
 
   private int maxHeaderSize;
@@ -44,6 +43,8 @@ public final class Decoder {
 
   private enum State {
     READ_HEADER_REPRESENTATION,
+    READ_ENCODING_CONTEXT_UPDATE,
+    READ_MAX_HEADER_TABLE_SIZE,
     READ_INDEXED_HEADER,
     READ_INDEXED_HEADER_NAME,
     READ_LITERAL_HEADER_NAME_LENGTH_PREFIX,
@@ -61,12 +62,11 @@ public final class Decoder {
     INCREMENTAL
   }
 
-  public Decoder(boolean server, int maxHeaderSize) {
-    this(server, maxHeaderSize, HpackUtil.DEFAULT_HEADER_TABLE_SIZE);
+  public Decoder(int maxHeaderSize) {
+    this(maxHeaderSize, HpackUtil.DEFAULT_HEADER_TABLE_SIZE);
   }
 
-  public Decoder(boolean server, int maxHeaderSize, int maxHeaderTableSize) {
-    this.huffmanDecoder = server ? Huffman.REQUEST_DECODER : Huffman.RESPONSE_DECODER;
+  public Decoder(int maxHeaderSize, int maxHeaderTableSize) {
     this.maxHeaderSize = maxHeaderSize;
     headerTable = new HeaderTable(maxHeaderTableSize);
     reset();
@@ -87,7 +87,7 @@ public final class Decoder {
           // Indexed Header Representation
           index = b & 0x7F;
           if (index == 0) {
-            clearReferenceSet();
+            state = State.READ_ENCODING_CONTEXT_UPDATE;
           } else if (index == 0x7F) {
             state = State.READ_INDEXED_HEADER;
           } else {
@@ -107,6 +107,43 @@ public final class Decoder {
             state = State.READ_LITERAL_HEADER_VALUE_LENGTH_PREFIX;
           }
         }
+        break;
+
+      case READ_ENCODING_CONTEXT_UPDATE:
+        b = (byte) in.read();
+        index = b & 0x7F;
+        if (b < 0) {
+          // Reference Set Emptying
+          if (index == 0) {
+            clearReferenceSet();
+            state = State.READ_HEADER_REPRESENTATION;
+          } else {
+            throw DECOMPRESSION_EXCEPTION;
+          }
+        } else {
+          // Maximum Header Table Size Change
+          if (index == 0x7F) {
+            state = State.READ_MAX_HEADER_TABLE_SIZE;
+          } else {
+            headerTable.setCapacity(index);
+            state = State.READ_HEADER_REPRESENTATION;
+          }
+        }
+        break;
+
+      case READ_MAX_HEADER_TABLE_SIZE:
+        int maxHeaderTableSize = decodeULE128(in);
+        if (maxHeaderTableSize == -1) {
+          return;
+        }
+
+        // Check for numerical overflow
+        if (maxHeaderTableSize > Integer.MAX_VALUE - index) {
+          throw DECOMPRESSION_EXCEPTION;
+        }
+
+        headerTable.setCapacity(index + maxHeaderTableSize);
+        state = State.READ_HEADER_REPRESENTATION;
         break;
 
       case READ_INDEXED_HEADER:
@@ -434,7 +471,7 @@ public final class Decoder {
     in.read(buf);
 
     if (huffmanEncoded) {
-      return huffmanDecoder.decode(buf);
+      return Huffman.DECODER.decode(buf);
     } else {
       return buf;
     }

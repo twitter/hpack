@@ -1,5 +1,4 @@
 {
-  "context": "request",
   "force_huffman_on": true,
   "header_blocks":
   [
@@ -11,8 +10,9 @@
         { ":path": "/" }
       ],
       "encoded": [ "82870084f666d84788f4466d6912d2717787" ]
-        
-    }, {
+
+    },
+    {
       "headers": [
         { ":method": "GET" },
         { ":scheme": "http" },
@@ -20,7 +20,8 @@
         { ":path": "/" }
       ],
       "encoded": [ "028bdb6d89e88cdad225a4e2ef83" ]
-    }, {
+    },
+    {
       "headers": [
         { ":method": "GET" },
         { ":scheme": "http" },

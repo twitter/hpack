@@ -22,27 +22,9 @@ import java.util.Arrays;
 import java.util.Random;
 
 import org.junit.Assert;
-
-import org.junit.Before;
 import org.junit.Test;
 
 public class HuffmanTest {
-
-  private HuffmanEncoder requestEncoder;
-
-  private HuffmanDecoder requestDecoder;
-
-  private HuffmanEncoder responseEncoder;
-
-  private HuffmanDecoder responseDecoder;
-
-  @Before
-  public void setUp() {
-    requestEncoder = Huffman.REQUEST_ENCODER;
-    requestDecoder = Huffman.REQUEST_DECODER;
-    responseEncoder = Huffman.RESPONSE_ENCODER;
-    responseDecoder = Huffman.RESPONSE_DECODER;
-  }
 
   @Test
   public void testHuffman() throws IOException {
@@ -59,8 +41,7 @@ public class HuffmanTest {
   }
 
   private void roundTrip(String s) throws IOException {
-    roundTrip(requestEncoder, requestDecoder, s);
-    roundTrip(responseEncoder, responseDecoder, s);
+    roundTrip(Huffman.ENCODER, Huffman.DECODER, s);
   }
 
   private static void roundTrip(HuffmanEncoder encoder, HuffmanDecoder decoder, String s) throws IOException {
@@ -68,8 +49,7 @@ public class HuffmanTest {
   }
 
   private void roundTrip(byte[] buf) throws IOException {
-    roundTrip(requestEncoder, requestDecoder, buf);
-    roundTrip(responseEncoder, responseDecoder, buf);
+    roundTrip(Huffman.ENCODER, Huffman.DECODER, buf);
   }
 
   private static void roundTrip(HuffmanEncoder encoder, HuffmanDecoder decoder, byte[] buf) throws IOException {
