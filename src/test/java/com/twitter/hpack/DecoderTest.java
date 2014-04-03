@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Twitter, Inc.
+ * Copyright 2014 Twitter, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,12 +25,11 @@ import static com.twitter.hpack.HpackUtil.ISO_8859_1;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 public class DecoderTest {
 
@@ -70,6 +69,12 @@ public class DecoderTest {
   }
 
   @Test(expected = IOException.class)
+  public void testUnusedIndex() throws IOException {
+    // Index 0 is not used
+    decode("80");
+  }
+
+  @Test(expected = IOException.class)
   public void testIllegalIndex() throws IOException {
     // Index larger than the header table
     decode("FF00");
@@ -83,63 +88,48 @@ public class DecoderTest {
 
   @Test(expected = IOException.class)
   public void testIllegalEncodeContextUpdate() throws IOException {
-    decode("8081");
+    decode("31");
+  }
+
+  @Test
+  public void testMaxHeaderTableSize() throws Exception {
+    decode("20");
+    assertEquals(0, decoder.getMaxHeaderTableSize());
+    decode("2FF11F");
+    assertEquals(4096, decoder.getMaxHeaderTableSize());
   }
 
   @Test(expected = IOException.class)
-  public void testInsidiousMaxHeaderSize() throws IOException {
+  public void testIllegalMaxHeaderTableSize() throws Exception {
+    // max header table size = SETTINGS_HEADER_TABLE_SIZE + 1
+    decode("2FF21F");
+  }
+
+  @Test(expected = IOException.class)
+  public void testInsidiousMaxHeaderTableSize() throws IOException {
     // max header table size sign overflow
-    decode("807F80FFFFFF08");
+    decode("2FF1FFFFFF07");
+  }
+
+  @Test
+  public void testReduceMaxHeaderTableSize() throws Exception {
+    decoder.setMaxHeaderTableSize(0);
+    assertEquals(0, decoder.getMaxHeaderTableSize());
+    decode("20");
   }
 
   @Test(expected = IOException.class)
-  public void testLiteralWithoutIndexingWithEmptyName() throws Exception {
-    decode("400005" + hex("value"));
+  public void testTooLargeMaxHeaderTableSize() throws Exception {
+    decoder.setMaxHeaderTableSize(0);
+    assertEquals(0, decoder.getMaxHeaderTableSize());
+    decode("21"); // encoder max header table size not small enough
   }
 
-  @Test
-  public void testLiteralWithoutIndexingWithLargeName() throws Exception {
-    // Ignore header name that exceeds max header size
-    StringBuilder sb = new StringBuilder();
-    sb.append("407F817F");
-    for (int i = 0; i < 16384; i++) {
-      sb.append("61"); // 'a'
-    }
-    sb.append("00");
-    decode(sb.toString());
-    verify(mockListener, never()).emitHeader((byte[]) any(), (byte[]) any());
-
-    // Verify header block is reported as truncated
-    assertTrue(decoder.endHeaderBlock(mockListener));
-    verify(mockListener, never()).emitHeader((byte[]) any(), (byte[]) any());
-
-    // Verify table is unmodified
-    decode("86");
-    verify(mockListener).emitHeader(getBytes(":scheme"), getBytes("http"));
-    verify(mockListener).emitHeader((byte[]) any(), (byte[]) any());
-  }
-
-  @Test
-  public void testLiteralWithoutIndexingWithLargeValue() throws Exception {
-    // Ignore header that exceeds max header size
-    StringBuilder sb = new StringBuilder();
-    sb.append("4004");
-    sb.append(hex("name"));
-    sb.append("7F813F");
-    for (int i = 0; i < 8192; i++) {
-      sb.append("61"); // 'a'
-    }
-    decode(sb.toString());
-    verify(mockListener, never()).emitHeader((byte[]) any(), (byte[]) any());
-
-    // Verify header block is reported as truncated
-    assertTrue(decoder.endHeaderBlock(mockListener));
-    verify(mockListener, never()).emitHeader((byte[]) any(), (byte[]) any());
-
-    // Verify table is unmodified
-    decode("86");
-    verify(mockListener).emitHeader(getBytes(":scheme"), getBytes("http"));
-    verify(mockListener).emitHeader((byte[]) any(), (byte[]) any());
+  @Test(expected = IOException.class)
+  public void testMissingMaxHeaderTableSize() throws Exception {
+    decoder.setMaxHeaderTableSize(0);
+    assertEquals(0, decoder.getMaxHeaderTableSize());
+    decode("30"); // clear reference set instead of size change
   }
 
   @Test(expected = IOException.class)
@@ -150,18 +140,18 @@ public class DecoderTest {
   @Test
   public void testLiteralWithIncrementalIndexingCompleteEviction() throws Exception {
     // Verify indexed host header
-    decode("0004" + hex("name") + "05" + hex("value"));
-    verify(mockListener).emitHeader(getBytes("name"), getBytes("value"));
-    verify(mockListener).emitHeader((byte[]) any(), (byte[]) any());
+    decode("4004" + hex("name") + "05" + hex("value"));
+    verify(mockListener).emitHeader(getBytes("name"), getBytes("value"), false);
+    verifyNoMoreInteractions(mockListener);
 
     reset(mockListener);
     assertFalse(decoder.endHeaderBlock(mockListener));
-    verify(mockListener, never()).emitHeader((byte[]) any(), (byte[]) any());
+    verifyNoMoreInteractions(mockListener);
 
     // Verify header is added to the reference set
     assertFalse(decoder.endHeaderBlock(mockListener));
-    verify(mockListener).emitHeader(getBytes("name"), getBytes("value"));
-    verify(mockListener).emitHeader((byte[]) any(), (byte[]) any());
+    verify(mockListener).emitHeader(getBytes("name"), getBytes("value"), false);
+    verifyNoMoreInteractions(mockListener);
 
     reset(mockListener);
     StringBuilder sb = new StringBuilder();
@@ -170,31 +160,83 @@ public class DecoderTest {
     }
     String value = sb.toString();
     sb = new StringBuilder();
-    sb.append("027F811F");
+    sb.append("427F811F");
     for (int i = 0; i < 4096; i++) {
       sb.append("61"); // 'a'
     }
     decode(sb.toString());
-    verify(mockListener).emitHeader(getBytes(":authority"), getBytes(value));
-    verify(mockListener).emitHeader((byte[]) any(), (byte[]) any());
+    verify(mockListener).emitHeader(getBytes(":authority"), getBytes(value), false);
+    verifyNoMoreInteractions(mockListener);
 
     reset(mockListener);
     assertFalse(decoder.endHeaderBlock(mockListener));
-    verify(mockListener, never()).emitHeader((byte[]) any(), (byte[]) any());
+    verifyNoMoreInteractions(mockListener);
 
     // Verify all headers has been evicted from table
     assertFalse(decoder.endHeaderBlock(mockListener));
-    verify(mockListener, never()).emitHeader((byte[]) any(), (byte[]) any());
+    verifyNoMoreInteractions(mockListener);
 
     // Verify next header is inserted at index 0
     // remove from reference set, insert into reference set and emit
-    decode("0004" + hex("name") + "05" + hex("value") + "8181");
-    verify(mockListener, times(2)).emitHeader(getBytes("name"), getBytes("value"));
-    verify(mockListener, times(2)).emitHeader((byte[]) any(), (byte[]) any());
+    decode("4004" + hex("name") + "05" + hex("value") + "8181");
+    verify(mockListener, times(2)).emitHeader(getBytes("name"), getBytes("value"), false);
+    verifyNoMoreInteractions(mockListener);
   }
 
   @Test
   public void testLiteralWithIncrementalIndexingWithLargeName() throws Exception {
+    // Ignore header name that exceeds max header size
+    StringBuilder sb = new StringBuilder();
+    sb.append("407F817F");
+    for (int i = 0; i < 16384; i++) {
+      sb.append("61"); // 'a'
+    }
+    sb.append("00");
+    decode(sb.toString());
+    verifyNoMoreInteractions(mockListener);
+
+    // Verify header block is reported as truncated
+    assertTrue(decoder.endHeaderBlock(mockListener));
+    verifyNoMoreInteractions(mockListener);
+
+    // Verify next header is inserted at index 0
+    // remove from reference set, insert into reference set and emit
+    decode("4004" + hex("name") + "05" + hex("value") + "8181");
+    verify(mockListener, times(2)).emitHeader(getBytes("name"), getBytes("value"), false);
+    verifyNoMoreInteractions(mockListener);
+  }
+
+  @Test
+  public void testLiteralWithIncrementalIndexingWithLargeValue() throws Exception {
+    // Ignore header that exceeds max header size
+    StringBuilder sb = new StringBuilder();
+    sb.append("4004");
+    sb.append(hex("name"));
+    sb.append("7F813F");
+    for (int i = 0; i < 8192; i++) {
+      sb.append("61"); // 'a'
+    }
+    decode(sb.toString());
+    verifyNoMoreInteractions(mockListener);
+
+    // Verify header block is reported as truncated
+    assertTrue(decoder.endHeaderBlock(mockListener));
+    verifyNoMoreInteractions(mockListener);
+
+    // Verify next header is inserted at index 0
+    // remove from reference set, insert into reference set and emit
+    decode("4004" + hex("name") + "05" + hex("value") + "8181");
+    verify(mockListener, times(2)).emitHeader(getBytes("name"), getBytes("value"), false);
+    verifyNoMoreInteractions(mockListener);
+  }
+
+  @Test(expected = IOException.class)
+  public void testLiteralWithoutIndexingWithEmptyName() throws Exception {
+    decode("000005" + hex("value"));
+  }
+
+  @Test
+  public void testLiteralWithoutIndexingWithLargeName() throws Exception {
     // Ignore header name that exceeds max header size
     StringBuilder sb = new StringBuilder();
     sb.append("007F817F");
@@ -203,21 +245,20 @@ public class DecoderTest {
     }
     sb.append("00");
     decode(sb.toString());
-    verify(mockListener, never()).emitHeader((byte[]) any(), (byte[]) any());
+    verifyNoMoreInteractions(mockListener);
 
     // Verify header block is reported as truncated
     assertTrue(decoder.endHeaderBlock(mockListener));
-    verify(mockListener, never()).emitHeader((byte[]) any(), (byte[]) any());
+    verifyNoMoreInteractions(mockListener);
 
-    // Verify next header is inserted at index 0
-    // remove from reference set, insert into reference set and emit
-    decode("0004" + hex("name") + "05" + hex("value") + "8181");
-    verify(mockListener, times(2)).emitHeader(getBytes("name"), getBytes("value"));
-    verify(mockListener, times(2)).emitHeader((byte[]) any(), (byte[]) any());
+    // Verify table is unmodified
+    decode("86");
+    verify(mockListener).emitHeader(getBytes(":scheme"), getBytes("http"), false);
+    verifyNoMoreInteractions(mockListener);
   }
 
   @Test
-  public void testLiteralWithIncrementalIndexingWithLargeValue() throws Exception {
+  public void testLiteralWithoutIndexingWithLargeValue() throws Exception {
     // Ignore header that exceeds max header size
     StringBuilder sb = new StringBuilder();
     sb.append("0004");
@@ -227,16 +268,65 @@ public class DecoderTest {
       sb.append("61"); // 'a'
     }
     decode(sb.toString());
-    verify(mockListener, never()).emitHeader((byte[]) any(), (byte[]) any());
+    verifyNoMoreInteractions(mockListener);
 
     // Verify header block is reported as truncated
     assertTrue(decoder.endHeaderBlock(mockListener));
-    verify(mockListener, never()).emitHeader((byte[]) any(), (byte[]) any());
+    verifyNoMoreInteractions(mockListener);
 
-    // Verify next header is inserted at index 0
-    // remove from reference set, insert into reference set and emit
-    decode("0004" + hex("name") + "05" + hex("value") + "8181");
-    verify(mockListener, times(2)).emitHeader(getBytes("name"), getBytes("value"));
-    verify(mockListener, times(2)).emitHeader((byte[]) any(), (byte[]) any());
+    // Verify table is unmodified
+    decode("86");
+    verify(mockListener).emitHeader(getBytes(":scheme"), getBytes("http"), false);
+    verifyNoMoreInteractions(mockListener);
+  }
+
+  @Test(expected = IOException.class)
+  public void testLiteralNeverIndexedWithEmptyName() throws Exception {
+    decode("100005" + hex("value"));
+  }
+
+  @Test
+  public void testLiteralNeverIndexedWithLargeName() throws Exception {
+    // Ignore header name that exceeds max header size
+    StringBuilder sb = new StringBuilder();
+    sb.append("107F817F");
+    for (int i = 0; i < 16384; i++) {
+      sb.append("61"); // 'a'
+    }
+    sb.append("00");
+    decode(sb.toString());
+    verifyNoMoreInteractions(mockListener);
+
+    // Verify header block is reported as truncated
+    assertTrue(decoder.endHeaderBlock(mockListener));
+    verifyNoMoreInteractions(mockListener);
+
+    // Verify table is unmodified
+    decode("86");
+    verify(mockListener).emitHeader(getBytes(":scheme"), getBytes("http"), false);
+    verifyNoMoreInteractions(mockListener);
+  }
+
+  @Test
+  public void testLiteralNeverIndexedWithLargeValue() throws Exception {
+    // Ignore header that exceeds max header size
+    StringBuilder sb = new StringBuilder();
+    sb.append("1004");
+    sb.append(hex("name"));
+    sb.append("7F813F");
+    for (int i = 0; i < 8192; i++) {
+      sb.append("61"); // 'a'
+    }
+    decode(sb.toString());
+    verifyNoMoreInteractions(mockListener);
+
+    // Verify header block is reported as truncated
+    assertTrue(decoder.endHeaderBlock(mockListener));
+    verifyNoMoreInteractions(mockListener);
+
+    // Verify table is unmodified
+    decode("86");
+    verify(mockListener).emitHeader(getBytes(":scheme"), getBytes("http"), false);
+    verifyNoMoreInteractions(mockListener);
   }
 }

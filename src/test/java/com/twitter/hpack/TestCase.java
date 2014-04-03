@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Twitter, Inc.
+ * Copyright 2014 Twitter, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,8 +44,9 @@ final class TestCase {
       .registerTypeAdapter(HeaderField.class, new HeaderFieldDeserializer())
       .create();
 
-  int maxHeaderSize;
+  int maxHeaderTableSize = -1;
   boolean useIndexing = true;
+  boolean sensitiveHeaders;
   boolean forceHuffmanOn;
   boolean forceHuffmanOff;
 
@@ -68,7 +69,7 @@ final class TestCase {
     for (int i = 0; i < headerBlocks.size(); i++) {
       HeaderBlock headerBlock = headerBlocks.get(i);
 
-      byte[] actual = encode(encoder, headerBlock.getHeaders(), headerBlock.clearReferenceSet(), headerBlock.getMaxHeaderTableSize());
+      byte[] actual = encode(encoder, headerBlock.getHeaders(), headerBlock.clearReferenceSet(), headerBlock.getMaxHeaderTableSize(), sensitiveHeaders);
 
       if (!Arrays.equals(actual, headerBlock.encodedBytes)) {
         throw new AssertionError("\nEXPECTED: " + headerBlock.getEncodedStr() +
@@ -99,39 +100,25 @@ final class TestCase {
     }
   }
 
-  void encode(Encoder encoder) throws Exception {
-    for (int i = 0; i < headerBlocks.size(); i++) {
-      HeaderBlock headerBlock = headerBlocks.get(i);
-      encode(encoder, headerBlock.getHeaders(), headerBlock.clearReferenceSet(), headerBlock.getMaxHeaderTableSize());
-    }
-  }
-
-  void decode(Decoder decoder) throws Exception {
-    for (int i = 0; i < headerBlocks.size(); i++) {
-      HeaderBlock headerBlock = headerBlocks.get(i);
-      decode(decoder, headerBlock.encodedBytes);
-    }
-  }
-
   private Encoder createEncoder() {
-    int maxHeaderSize = this.maxHeaderSize;
-    if (maxHeaderSize == 0) {
-      maxHeaderSize = HpackUtil.DEFAULT_HEADER_TABLE_SIZE;
+    int maxHeaderTableSize = this.maxHeaderTableSize;
+    if (maxHeaderTableSize == -1) {
+      maxHeaderTableSize = HpackUtil.DEFAULT_HEADER_TABLE_SIZE;
     }
 
-    return new Encoder(maxHeaderSize, useIndexing, forceHuffmanOn, forceHuffmanOff);
+    return new Encoder(maxHeaderTableSize, useIndexing, forceHuffmanOn, forceHuffmanOff);
   }
 
   private Decoder createDecoder() {
-    int maxHeaderSize = this.maxHeaderSize;
-    if (maxHeaderSize == 0) {
-      maxHeaderSize = HpackUtil.DEFAULT_HEADER_TABLE_SIZE;
+    int maxHeaderTableSize = this.maxHeaderTableSize;
+    if (maxHeaderTableSize == -1) {
+      maxHeaderTableSize = HpackUtil.DEFAULT_HEADER_TABLE_SIZE;
     }
 
-    return new Decoder(8192, maxHeaderSize);
+    return new Decoder(8192, maxHeaderTableSize);
   }
 
-  private static byte[] encode(Encoder encoder, List<HeaderField> headers, boolean clearReferenceSet, int maxHeaderTableSize)
+  private static byte[] encode(Encoder encoder, List<HeaderField> headers, boolean clearReferenceSet, int maxHeaderTableSize, boolean sensitive)
       throws IOException {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
@@ -140,11 +127,11 @@ final class TestCase {
     }
 
     if (maxHeaderTableSize != -1) {
-      encoder.setHeaderTableSize(baos, maxHeaderTableSize);
+      encoder.setMaxHeaderTableSize(baos, maxHeaderTableSize);
     }
 
     for (HeaderField e: headers) {
-      encoder.encodeHeader(baos, e.name, e.value);
+      encoder.encodeHeader(baos, e.name, e.value, sensitive);
     }
 
     encoder.endHeaders(baos);

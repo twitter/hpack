@@ -1,4 +1,5 @@
 {
+  "sensitive_headers": true,
   "force_huffman_off": true,
   "header_blocks":
   [
@@ -7,30 +8,13 @@
         { ":authority": "twitter.com" }
       ],
       "encoded": [
-        "410b 7477 6974 7465 722e 636f 6d"
-      ]
-    },
-    {
-      "headers": [
-        { ":authority": "twitter.com" }
-      ],
-      "encoded": [
-      ]
-    },
-    {
-      "headers": [
-        { ":authority": "twitter.com" },
-        { ":authority": "twitter.com" }
-      ],
-      "encoded": [
-        "8181 8181"
+        "110b 7477 6974 7465 722e 636f 6d"
       ]
     },
     {
       "headers": [
       ],
       "encoded": [
-        "81"
       ]
     },
     {
@@ -38,23 +22,13 @@
         { "name": "value" }
       ],
       "encoded": [
-        "4004 6e61 6d65 0576 616c 7565"
+        "1004 6e61 6d65 0576 616c 7565"
       ]
     },
     {
       "headers": [
-        { "name": "value" }
       ],
       "encoded": [
-      ]
-    },
-    {
-      "headers": [
-        { "name": "value" },
-        { "name": "value" }
-      ],
-      "encoded": [
-        "8181 8181"
       ]
     },
     {
@@ -62,7 +36,13 @@
         { "name": "" }
       ],
       "encoded": [
-        "4100 82"
+        "1004 6e61 6d65 00"
+      ]
+    },
+    {
+      "headers": [
+      ],
+      "encoded": [
       ]
     }
   ]

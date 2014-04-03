@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Twitter, Inc.
+ * Copyright 2014 Twitter, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 /**
- * <a href="http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-05">
- * HPACK: HTTP/2.0 Header Compression</a>
+ * <a href="http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-07">
+ * HPACK - Header Compression for HTTP/2</a>
  */
 package com.twitter.hpack;

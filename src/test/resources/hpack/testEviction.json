@@ -1,5 +1,5 @@
 {
-  "max_header_size": 128,
+  "max_header_table_size": 128,
   "force_huffman_on": true,
   "header_blocks":
   [
@@ -10,7 +10,10 @@
         { "x-custom": "val2" },
         { "x-custom": "val3" }
       ],
-      "encoded": [ "048608374172239f0086f3953ac22dd383e6859b0183e6859f0183e685cd" ]
+      "encoded": [
+        "4487 3e2d b577 a5d5 ff40 86e9 995c 7173",
+        "6d83 e49b 0741 83e4 9b0b 4183 e49b 11"
+      ]
     },
     {
       "headers": [
@@ -19,11 +22,10 @@
         { "x-custom": "val5" },
         { "x-custom": "val6" }
       ],
-      "comment": [
-        "Original example unnecessarily removed to-be-evicted headers from reference set.",
-        "82068608374172239f820283e685cf0183e685d10183e685d3"
-      ],
-      "encoded": [ "068608374172239f0283e685cf0183e685d10183e685d3" ]
+      "encoded": [
+        "4687 3e2d b577 a5d5 ff42 83e4 9b20 4183",
+        "e49b 2141 83e4 9b22"
+      ]
     },
     {
       "headers": [
@@ -32,11 +34,10 @@
         { "x-custom": "val2" },
         { "x-custom": "val3" }
       ],
-      "comment": [
-        "Original example unnecessarily removed to-be-evicted headers from reference set.",
-        "82068608374172239f820283e6859b0183e6859f0183e685cd"
-      ],
-      "encoded": [ "068608374172239f0283e6859b0183e6859f0183e685cd" ]
+      "encoded": [
+        "4687 3e2d b577 a5d5 ff42 83e4 9b07 4183",
+        "e49b 0b41 83e4 9b11"
+      ]
     }
   ]
 }

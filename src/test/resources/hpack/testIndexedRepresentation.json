@@ -5,30 +5,38 @@
       "headers": [
         { ":scheme": "http" }
       ],
-      "encoded": [ "86" ]
+      "encoded": [
+        "86"
+      ]
     },
     {
       "headers": [
         { ":scheme": "http" }
       ],
-      "encoded": [ "" ]
+      "encoded": [
+      ]
     },
     {
       "headers": [
       ],
-      "encoded": [ "81" ]
+      "encoded": [
+        "81"
+      ]
     },
     {
       "headers": [
       ],
-      "encoded": [ "" ]
+      "encoded": [
+      ]
     },
     {
       "headers": [
         { ":scheme": "http" },
         { ":scheme": "http" }
       ],
-      "encoded": [ "818181" ]
+      "encoded": [
+        "818181"
+      ]
     }
   ]
 }

@@ -12,11 +12,12 @@
         { ":scheme": "http" },
         { ":scheme": "https" },
         { ":status": "200" },
-        { ":status": "500" },
-        { ":status": "404" },
-        { ":status": "403" },
+        { ":status": "204" },
+        { ":status": "206" },
+        { ":status": "304" },
         { ":status": "400" },
-        { ":status": "401" },
+        { ":status": "404" },
+        { ":status": "500" },
         { "accept-charset": "" },
         { "accept-encoding": "" },
         { "accept-language": "" },
@@ -66,8 +67,10 @@
         { "www-authenticate": "" }
       ],
       "encoded": [
-        "81838587898b8d8f91939597999b9d9fa1a3a5a7a9abadafb1b3b5b7b9bbbdbfc1c3c5",
-        "c7c9cbcdcfd1d3d5d7d9dbdddfe1e3e5e7e9ebedeff1f3f5f7"
+        "8183 8587 898b 8d8f 9193 9597 999b 9d9f",
+        "a1a3 a5a7 a9ab adaf b1b3 b5b7 b9bb bdbf",
+        "c1c3 c5c7 c9cb cdcf d1d3 d5d7 d9db dddf",
+        "e1e3 e5e7 e9eb edef f1f3 f5f7 f9"
       ]
     }
   ]

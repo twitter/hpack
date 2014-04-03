@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Twitter, Inc.
+ * Copyright 2014 Twitter, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package com.twitter.hpack;
 import java.io.IOException;
 import java.io.InputStream;
 
+import com.twitter.hpack.HpackUtil.IndexType;
+
 import static com.twitter.hpack.HeaderField.HEADER_ENTRY_OVERHEAD;
 
 public final class Decoder {
@@ -29,8 +31,11 @@ public final class Decoder {
   private final HeaderTable headerTable;
 
   private int maxHeaderSize;
-  private long headerSize;
+  private int maxHeaderTableSize;
+  private int encoderMaxHeaderTableSize;
+  private boolean maxHeaderTableSizeChangedRequired;
 
+  private long headerSize;
   private State state;
   private IndexType indexType;
   private int index;
@@ -39,11 +44,9 @@ public final class Decoder {
   private int nameLength;
   private int valueLength;
   private byte[] name;
-  private byte[] value;
 
   private enum State {
     READ_HEADER_REPRESENTATION,
-    READ_ENCODING_CONTEXT_UPDATE,
     READ_MAX_HEADER_TABLE_SIZE,
     READ_INDEXED_HEADER,
     READ_INDEXED_HEADER_NAME,
@@ -57,18 +60,16 @@ public final class Decoder {
     SKIP_LITERAL_HEADER_VALUE
   }
 
-  private enum IndexType {
-    NONE,
-    INCREMENTAL
-  }
-
   public Decoder(int maxHeaderSize) {
     this(maxHeaderSize, HpackUtil.DEFAULT_HEADER_TABLE_SIZE);
   }
 
   public Decoder(int maxHeaderSize, int maxHeaderTableSize) {
-    this.maxHeaderSize = maxHeaderSize;
     headerTable = new HeaderTable(maxHeaderTableSize);
+    this.maxHeaderSize = maxHeaderSize;
+    this.maxHeaderTableSize = maxHeaderTableSize;
+    encoderMaxHeaderTableSize = maxHeaderTableSize;
+    maxHeaderTableSizeChangedRequired = false;
     reset();
   }
 
@@ -78,24 +79,31 @@ public final class Decoder {
     indexType = IndexType.NONE;
   }
 
+  /**
+   * Decode the header block into header fields.
+   */
   public void decode(InputStream in, HeaderListener headerListener) throws IOException {
     while (in.available() > 0) {
       switch(state) {
       case READ_HEADER_REPRESENTATION:
         byte b = (byte) in.read();
+        if (maxHeaderTableSizeChangedRequired && (b & 0xF0) != 0x20) {
+          // Encoder MUST signal maximum header table size change
+          throw DECOMPRESSION_EXCEPTION;
+        }
         if (b < 0) {
-          // Indexed Header Representation
+          // Indexed Header Field
           index = b & 0x7F;
           if (index == 0) {
-            state = State.READ_ENCODING_CONTEXT_UPDATE;
+            throw DECOMPRESSION_EXCEPTION;
           } else if (index == 0x7F) {
             state = State.READ_INDEXED_HEADER;
           } else {
             toggleIndex(index, headerListener);
           }
-        } else {
-          // Literal Header Representation
-          indexType = ((b & 0x40) == 0x40) ? IndexType.NONE : IndexType.INCREMENTAL;
+        } else if ((b & 0x40) == 0x40) {
+          // Literal Header Field with Incremental Indexing
+          indexType = IndexType.INCREMENTAL;
           index = b & 0x3F;
           if (index == 0) {
             state = State.READ_LITERAL_HEADER_NAME_LENGTH_PREFIX;
@@ -106,43 +114,54 @@ public final class Decoder {
             readName(index);
             state = State.READ_LITERAL_HEADER_VALUE_LENGTH_PREFIX;
           }
-        }
-        break;
-
-      case READ_ENCODING_CONTEXT_UPDATE:
-        b = (byte) in.read();
-        index = b & 0x7F;
-        if (b < 0) {
-          // Reference Set Emptying
-          if (index == 0) {
-            clearReferenceSet();
-            state = State.READ_HEADER_REPRESENTATION;
+        } else if ((b & 0x20) == 0x20) {
+          // Encoding Context Update
+          index = b & 0x0F;
+          if ((b & 0x10) == 0x10) {
+            // Reference Set Emptying
+            if (index == 0) {
+              clearReferenceSet();
+              state = State.READ_HEADER_REPRESENTATION;
+            } else {
+              throw DECOMPRESSION_EXCEPTION;
+            }
           } else {
-            throw DECOMPRESSION_EXCEPTION;
+            // Maximum Header Table Size Change
+            if (index == 0x0F) {
+              state = State.READ_MAX_HEADER_TABLE_SIZE;
+            } else {
+              setHeaderTableSize(index);
+              state = State.READ_HEADER_REPRESENTATION;
+            }
           }
         } else {
-          // Maximum Header Table Size Change
-          if (index == 0x7F) {
-            state = State.READ_MAX_HEADER_TABLE_SIZE;
+          // Literal Header Field without Indexing / never Indexed
+          indexType = ((b & 0x10) == 0x10) ? IndexType.NEVER : IndexType.NONE;
+          index = b & 0x0F;
+          if (index == 0) {
+            state = State.READ_LITERAL_HEADER_NAME_LENGTH_PREFIX;
+          } else if (index == 0x0F) {
+            state = State.READ_INDEXED_HEADER_NAME;
           } else {
-            headerTable.setCapacity(index);
-            state = State.READ_HEADER_REPRESENTATION;
+            // Index was stored as the prefix
+            readName(index);
+            state = State.READ_LITERAL_HEADER_VALUE_LENGTH_PREFIX;
           }
         }
         break;
 
       case READ_MAX_HEADER_TABLE_SIZE:
-        int maxHeaderTableSize = decodeULE128(in);
-        if (maxHeaderTableSize == -1) {
+        int headerTableSize = decodeULE128(in);
+        if (headerTableSize == -1) {
           return;
         }
 
         // Check for numerical overflow
-        if (maxHeaderTableSize > Integer.MAX_VALUE - index) {
+        if (headerTableSize > Integer.MAX_VALUE - index) {
           throw DECOMPRESSION_EXCEPTION;
         }
 
-        headerTable.setCapacity(index + maxHeaderTableSize);
+        setHeaderTableSize(index + headerTableSize);
         state = State.READ_HEADER_REPRESENTATION;
         break;
 
@@ -299,8 +318,7 @@ public final class Decoder {
           }
 
           if (valueLength == 0) {
-            value = EMPTY;
-            insertHeader(headerListener, name, value, indexType);
+            insertHeader(headerListener, name, EMPTY, indexType);
             state = State.READ_HEADER_REPRESENTATION;
           } else {
             state = State.READ_LITERAL_HEADER_VALUE;
@@ -350,7 +368,7 @@ public final class Decoder {
           return;
         }
 
-        value = readStringLiteral(in, valueLength);
+        byte[] value = readStringLiteral(in, valueLength);
         insertHeader(headerListener, name, value, indexType);
         state = State.READ_HEADER_REPRESENTATION;
         break;
@@ -369,17 +387,52 @@ public final class Decoder {
     }
   }
 
+  /**
+   * End the current header block. Returns if the header field has been truncated.
+   * This must be called after the header block has been completely decoded.
+   */
   public boolean endHeaderBlock(HeaderListener headerListener) {
     for (int index = 1; index <= headerTable.length(); index++) {
       HeaderField headerField = headerTable.getEntry(index);
       if (headerField.inReferenceSet && !headerField.emitted) {
-        emitHeader(headerListener, headerField.name, headerField.value);
+        emitHeader(headerListener, headerField.name, headerField.value, false);
       }
       headerField.emitted = false;
     }
     boolean truncated = headerSize > maxHeaderSize;
     reset();
     return truncated;
+  }
+
+  /**
+   * Set the maximum header table size.
+   * If this is below the maximum size of the header table used by the encoder,
+   * the beginning of the next header block MUST signal this change.
+   */
+  public void setMaxHeaderTableSize(int maxHeaderTableSize) {
+    this.maxHeaderTableSize = maxHeaderTableSize;
+    if (maxHeaderTableSize < encoderMaxHeaderTableSize) {
+      // decoder requires less space than encoder
+      // encoder MUST signal this change
+      maxHeaderTableSizeChangedRequired = true;
+      headerTable.setCapacity(maxHeaderTableSize);
+    }
+  }
+
+  /**
+   * Return the maximum header table size.
+   * This is the maximum size allowed by both the encoder and the decoder.
+   */
+  public int getMaxHeaderTableSize() {
+    return headerTable.capacity();
+  }
+
+  private void setHeaderTableSize(int headerTableSize) throws IOException {
+    if (headerTableSize > maxHeaderTableSize) {
+      throw DECOMPRESSION_EXCEPTION;
+    }
+    encoderMaxHeaderTableSize = headerTableSize;
+    headerTable.setCapacity(headerTableSize);
   }
 
   private void readName(int index) throws IOException {
@@ -404,7 +457,7 @@ public final class Decoder {
       } else {
         headerField.inReferenceSet = true;
         headerField.emitted = true;
-        emitHeader(headerListener, headerField.name, headerField.value);
+        emitHeader(headerListener, headerField.name, headerField.value, false);
       }
     } else if (index - headerTableLength <= StaticTable.length) {
       HeaderField headerField = StaticTable.getEntry(index - headerTableLength);
@@ -415,10 +468,11 @@ public final class Decoder {
   }
 
   private void insertHeader(HeaderListener headerListener, byte[] name, byte[] value, IndexType indexType) {
-    emitHeader(headerListener, name, value);
+    emitHeader(headerListener, name, value, indexType == IndexType.NEVER);
 
     switch (indexType) {
       case NONE:
+      case NEVER:
         break;
 
       case INCREMENTAL:
@@ -433,13 +487,13 @@ public final class Decoder {
     }
   }
 
-  private void emitHeader(HeaderListener headerListener, byte[] name, byte[] value) {
+  private void emitHeader(HeaderListener headerListener, byte[] name, byte[] value, boolean sensitive) {
     if (name.length == 0) {
       throw new AssertionError("name is empty");
     }
     long newSize = headerSize + name.length + value.length;
     if (newSize <= maxHeaderSize) {
-      headerListener.emitHeader(name, value);
+      headerListener.emitHeader(name, value, sensitive);
       headerSize = (int) newSize;
     } else {
       // truncation will be reported during endHeaderBlock
@@ -468,7 +522,9 @@ public final class Decoder {
 
   private byte[] readStringLiteral(InputStream in, int length) throws IOException {
     byte[] buf = new byte[length];
-    in.read(buf);
+    if (in.read(buf) != length) {
+      throw DECOMPRESSION_EXCEPTION;
+    }
 
     if (huffmanEncoded) {
       return Huffman.DECODER.decode(buf);

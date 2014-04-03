@@ -7,7 +7,10 @@
         { ":path": "/somepath" },
         { "x-custom": "val" }
       ],
-      "encoded": [ "048608374172239f0086f3953ac22dd383e685ff" ]
+      "encoded": [
+        "4487 3e2d b577 a5d5 ff40 86e9 995c 7173",
+        "6d83 e49b 3f"
+      ]
     },
     {
       "headers": [
@@ -15,7 +18,9 @@
         { "x-custom": "val" },
         { "x-custom": "val" }
       ],
-      "encoded": [ "81818181" ]
+      "encoded": [
+        "8181 8181"
+      ]
     },
     {
       "headers": [
@@ -24,7 +29,9 @@
         { "foo": "bar" },
         { "x-custom": "val" }
       ],
-      "encoded": [ "0082c5ad82bd0f82828282" ]
+      "encoded": [
+        "4083 e0d6 ff83 de9c 3f82 8282 82"
+      ]
     },
     {
       "headers": [
@@ -35,13 +42,17 @@
         { "foo": "bar" },
         { "foo": "bar" }
       ],
-      "encoded": [ "82828282818181818181" ]
+      "encoded": [
+        "8282 8282 8181 8181 8181"
+      ]
     },
     {
       "headers": [
         { ":path": "/somepath" }
       ],
-      "encoded": [ "8182" ]
+      "encoded": [
+        "8182"
+      ]
     },
     {
       "headers": [
@@ -52,7 +63,9 @@
         { "foo": "bar" },
         { "foo": "bar" }
       ],
-      "encoded": [ "8281828281818181" ]
+      "encoded": [
+        "8281 8282 8181 8181"
+      ]
     },
     {
       "headers": [
@@ -61,7 +74,10 @@
         { "x-custom2": "val" },
         { "x-custom2": "val" }
       ],
-      "encoded": [ "0087f3953ac22dd0ff83e685ff818181818283" ]
+      "encoded": [
+        "4087 e999 5c71 736d 2f83 e49b 3f81 8181",
+        "8182 83"
+      ]
     }
   ]
 }

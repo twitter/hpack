@@ -7,34 +7,43 @@
       "headers": [
         { ":authority": "twitter.com" }
       ],
-      "encoded": [ "410B747769747465722e636f6d" ]
+      "encoded": [
+        "010b 7477 6974 7465 722e 636f 6d"
+      ]
     },
     {
       "headers": [
       ],
-      "encoded": [ "" ]
+      "encoded": [
+      ]
     },
     {
       "headers": [
         { "name": "value" }
       ],
-      "encoded": [ "40046e616d650576616c7565" ]
+      "encoded": [
+        "0004 6e61 6d65 0576 616c 7565"
+      ]
     },
     {
       "headers": [
       ],
-      "encoded": [ "" ]
+      "encoded": [
+      ]
     },
     {
       "headers": [
         { "name": "" }
       ],
-      "encoded": [ "40046e616d6500" ]
+      "encoded": [
+        "0004 6e61 6d65 00"
+      ]
     },
     {
       "headers": [
       ],
-      "encoded": [ "" ]
+      "encoded": [
+      ]
     }
   ]
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Twitter, Inc.
+ * Copyright 2014 Twitter, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ final class TestHeaderListener implements HeaderListener {
   }
 
   @Override
-  public void emitHeader(byte[] name, byte[] value) {
+  public void emitHeader(byte[] name, byte[] value, boolean sensitive) {
     headers.add(new HeaderField(name, value));
   }
 }

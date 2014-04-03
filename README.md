@@ -1,7 +1,7 @@
 HPACK [![Build Status](https://travis-ci.org/twitter/hpack.png?branch=master)](https://travis-ci.org/twitter/hpack)
 =====
 
-[Header Compression for HTTP/2](http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-06)
+[Header Compression for HTTP/2](http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-07)
 
 ## Download
 
@@ -11,7 +11,7 @@ HPACK can be downloaded from the Maven central repository. Add the following dep
 <dependency>
     <groupId>com.twitter</groupId>
     <artifactId>hpack</artifactId>
-    <version>0.6.0</version>
+    <version>0.7.0</version>
 </dependency>
 ```
 
@@ -24,25 +24,26 @@ This library provides support for compression of header sets into header blocks.
       int maxHeaderTableSize = 4096;
       byte[] name = "name".getBytes();
       byte[] value = "value".getBytes();
+      boolean sensitive = false;
 
       ByteArrayOutputStream out = new ByteArrayOutputStream();
 
       // encode header set into header block
-      Encoder encoder = new Encoder(false, maxHeaderTableSize);
-      encoder.encodeHeader(out, name, value);
+      Encoder encoder = new Encoder(maxHeaderTableSize);
+      encoder.encodeHeader(out, name, value, sensitive);
       encoder.endHeaders(out);
 
       ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
 
       HeaderListener listener = new HeaderListener() {
         @Override
-        public void emitHeader(byte[] name, byte[] value) {
+        public void emitHeader(byte[] name, byte[] value, boolean sensitive) {
           // handle header field
         }
       };
 
       // decode header block into header set
-      Decoder decoder = new Decoder(true, maxHeaderSize, maxHeaderTableSize);
+      Decoder decoder = new Decoder(maxHeaderSize, maxHeaderTableSize);
       decoder.decode(in, listener);
       decoder.endHeaderBlock(listener);
     } catch (IOException e) {

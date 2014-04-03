@@ -1,5 +1,5 @@
 {
-  "max_header_size": 256,
+  "max_header_table_size": 256,
   "force_huffman_on": true,
   "header_blocks":
   [
@@ -11,10 +11,10 @@
         { "location": "https://www.example.com" }
       ],
       "encoded": [
-        "0882 98a7 1885 73d5 cd11 1f22 98ef 6b3a",
-        "7a0e 6e8f a263 d072 9a6e 8397 d869 bd87",
-        "3747 bbbf c730 90ce 3174 3d80 1b6d b107",
-        "cd1a 3962 44b7 4f"
+        "4882 4017 5985 bf06 724b 9763 93d6 dbb2",
+        "9884 de2a 7188 0506 2098 5131 09b5 6ba3",
+        "7191 adce bf19 8e7e 7cf9 bebe 89b6 fb16",
+        "fa9b 6f"
       ]
     },
     {
@@ -38,12 +38,12 @@
         { "set-cookie": "foo=ASDJKHQKBZXOQWEOPIUAXQWEOIU; max-age=3600; version=1" }
       ],
       "encoded": [
-        "8484 0398 ef6b 3a7a 0e6e 8fa2 63d0 729a",
-        "6e83 97d8 69bd 873f 47bb bfc7 1d83 cbd5",
-        "4e84 8483 833a b3c5 adb7 7f87 6fc7 fbf7",
-        "fdbf bebf f3f7 f4fb 7ebb be9f 5f87 e37f",
-        "efed faee fa7c 3f1d 5d1a 23ce 5464 36cd",
-        "494b d5d1 cc5f 0535 969b"
+        "8484 4393 d6db b298 84de 2a71 8805 0620",
+        "9851 3111 b56b a35e 84ab dd97 ff84 8483",
+        "837b b1e0 d6cf 9f6e 8f9f d3e5 f6fa 76fe",
+        "fd3c 7edf 9eff 1f2f 0f3c fe9f 6fcf 7f8f",
+        "879f 61ad 4f4c c9a9 73a2 200e c372 5e18",
+        "b1b7 4e3f"
      ]
     }
   ]

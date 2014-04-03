@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Twitter, Inc.
+ * Copyright 2014 Twitter, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package com.twitter.hpack;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
+
+import com.twitter.hpack.HpackUtil.IndexType;
 
 public final class Encoder {
 
@@ -65,14 +67,33 @@ public final class Encoder {
   /**
    * Encode the header field into the header block.
    */
-  public void encodeHeader(OutputStream out, byte[] name, byte[] value) throws IOException {
+  public void encodeHeader(OutputStream out, byte[] name, byte[] value, boolean sensitive) throws IOException {
+
+    // If the header value is sensitive then it must never be indexed
+    if (sensitive) {
+      int nameIndex = getNameIndex(name);
+      encodeLiteral(out, name, value, IndexType.NEVER, nameIndex);
+      return;
+    }
+
+    // If the peer will only use the static table
+    if (capacity == 0) {
+      int staticTableIndex = StaticTable.getIndex(name, value);
+      if (staticTableIndex == -1) {
+        int nameIndex = StaticTable.getIndex(name);
+        encodeLiteral(out, name, value, IndexType.NONE, nameIndex);
+      } else {
+        encodeInteger(out, 0x80, 7, staticTableIndex);
+      }
+      return;
+    }
 
     int headerSize = HeaderField.sizeOf(name, value);
 
     // If the headerSize is greater than the max table size then it must be encoded literally
     if (headerSize > capacity) {
       int nameIndex = getNameIndex(name);
-      encodeLiteral(out, name, value, false, nameIndex);
+      encodeLiteral(out, name, value, IndexType.NONE, nameIndex);
       return;
     }
 
@@ -121,7 +142,8 @@ public final class Encoder {
         if (useIndexing) {
           ensureCapacity(out, headerSize);
         }
-        encodeLiteral(out, name, value, useIndexing, nameIndex);
+        IndexType indexType = useIndexing ? IndexType.INCREMENTAL : IndexType.NONE;
+        encodeLiteral(out, name, value, indexType, nameIndex);
         if (useIndexing) {
           add(name, value);
         }
@@ -159,11 +181,13 @@ public final class Encoder {
       entry.emitted = false;
       entry = entry.before;
     }
-    out.write(0x80);
-    out.write(0x80);
+    out.write(0x30);
   }
 
-  public void setHeaderTableSize(OutputStream out, int maxHeaderTableSize) throws IOException {
+  /**
+   * Set the maximum header table size.
+   */
+  public void setMaxHeaderTableSize(OutputStream out, int maxHeaderTableSize) throws IOException {
     if (maxHeaderTableSize < 0) {
       throw new IllegalArgumentException("Illegal Capacity: "+ maxHeaderTableSize);
     }
@@ -172,8 +196,14 @@ public final class Encoder {
       ensureCapacity(out, neededSize);
     }
     this.capacity = maxHeaderTableSize;
-    out.write(0x80);
-    encodeInteger(out, 0x00, 7, maxHeaderTableSize);
+    encodeInteger(out, 0x20, 4, maxHeaderTableSize);
+  }
+
+  /**
+   * Return the maximum header table size.
+   */
+  public int getMaxHeaderTableSize() {
+    return capacity;
   }
 
   /**
@@ -206,13 +236,32 @@ public final class Encoder {
   }
 
   /**
-   * 4.3.1. Literal Header Field without Indexing
-   * 4.3.2. Literal Header Field with Incremental Indexing
+   * 4.3.1. Literal Header Field with Incremental Indexing
+   * 4.3.2. Literal Header Field without Indexing
+   * 4.3.3. Literal Header Field never Indexed
    */
-  private void encodeLiteral(OutputStream out, byte[] name, byte[] value, boolean indexing, int nameIndex)
+  private void encodeLiteral(OutputStream out, byte[] name, byte[] value, IndexType indexType, int nameIndex)
       throws IOException {
 
-    encodeInteger(out, indexing ? 0x00 : 0x40, 6, nameIndex == -1 ? 0 : nameIndex);
+    int mask;
+    int prefixBits;
+    switch(indexType) {
+    case INCREMENTAL:
+      mask = 0x40;
+      prefixBits = 6;
+      break;
+    case NONE:
+      mask = 0x00;
+      prefixBits = 4;
+      break;
+    case NEVER:
+      mask = 0x10;
+      prefixBits = 4;
+      break;
+    default:
+      throw new IllegalStateException("should not reach here");
+    }
+    encodeInteger(out, mask, prefixBits, nameIndex == -1 ? 0 : nameIndex);
 
     if (nameIndex == -1) {
       encodeStringLiteral(out, name);

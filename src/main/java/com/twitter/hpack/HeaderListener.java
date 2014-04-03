@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Twitter, Inc.
+ * Copyright 2014 Twitter, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,5 +21,5 @@ public interface HeaderListener {
    * emitHeader is called by the decoder during header field emission.
    * The name and value byte arrays must not be modified.
    */
-  public void emitHeader(byte[] name, byte[] value);
+  public void emitHeader(byte[] name, byte[] value, boolean sensitive);
 }

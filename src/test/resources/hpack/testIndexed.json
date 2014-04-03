@@ -6,21 +6,28 @@
         { ":path": "/testpath" },
         { "x-custom": "foo " }
       ],
-      "encoded": [ "0486088c22e4473f0086f3953ac22dd383c5ade8" ]
+      "encoded": [
+        "4486 3b97 8baf 4bab 4086 e999 5c71 736d",
+        "83e0 d69b"
+      ]
     },
     {
       "headers": [
         { ":path": "/" },
         { "x-custom": "bar" }
       ],
-      "encoded": [ "860282bd0f8384" ]
+      "encoded": [
+        "8642 0362 6172 8384"
+      ]
     },
     {
       "headers": [
         { ":path": "/testpath"},
         { "x-custom": "foo" }
       ],
-      "encoded": [ "840182c5ad8283" ]
+      "encoded": [
+        "8441 0366 6f6f 8283"
+      ]
     }
   ]
 }
