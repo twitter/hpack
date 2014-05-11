@@ -3,7 +3,7 @@
 
     <groupId>com.twitter</groupId>
     <artifactId>hpack</artifactId>
-    <version>0.7.1-SNAPSHOT</version>
+    <version>0.7.1</version>
 
     <name>HPACK</name>
     <url>http://github.com/twitter/hpack</url>
