@@ -127,6 +127,7 @@ public final class Decoder {
             }
           } else {
             // Maximum Header Table Size Change
+            maxHeaderTableSizeChangedRequired = false;
             if (index == 0x0F) {
               state = State.READ_MAX_HEADER_TABLE_SIZE;
             } else {

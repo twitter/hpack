@@ -115,7 +115,7 @@ public class DecoderTest {
   public void testReduceMaxHeaderTableSize() throws Exception {
     decoder.setMaxHeaderTableSize(0);
     assertEquals(0, decoder.getMaxHeaderTableSize());
-    decode("20");
+    decode("2081");
   }
 
   @Test(expected = IOException.class)
