@@ -33,7 +33,7 @@ public final class Decoder {
   private int maxHeaderSize;
   private int maxHeaderTableSize;
   private int encoderMaxHeaderTableSize;
-  private boolean maxHeaderTableSizeChangedRequired;
+  private boolean maxHeaderTableSizeChangeRequired;
 
   private long headerSize;
   private State state;
@@ -69,7 +69,7 @@ public final class Decoder {
     this.maxHeaderSize = maxHeaderSize;
     this.maxHeaderTableSize = maxHeaderTableSize;
     encoderMaxHeaderTableSize = maxHeaderTableSize;
-    maxHeaderTableSizeChangedRequired = false;
+    maxHeaderTableSizeChangeRequired = false;
     reset();
   }
 
@@ -87,7 +87,7 @@ public final class Decoder {
       switch(state) {
       case READ_HEADER_REPRESENTATION:
         byte b = (byte) in.read();
-        if (maxHeaderTableSizeChangedRequired && (b & 0xF0) != 0x20) {
+        if (maxHeaderTableSizeChangeRequired && (b & 0xF0) != 0x20) {
           // Encoder MUST signal maximum header table size change
           throw DECOMPRESSION_EXCEPTION;
         }
@@ -414,7 +414,7 @@ public final class Decoder {
     if (maxHeaderTableSize < encoderMaxHeaderTableSize) {
       // decoder requires less space than encoder
       // encoder MUST signal this change
-      maxHeaderTableSizeChangedRequired = true;
+      maxHeaderTableSizeChangeRequired = true;
       headerTable.setCapacity(maxHeaderTableSize);
     }
   }
@@ -432,6 +432,7 @@ public final class Decoder {
       throw DECOMPRESSION_EXCEPTION;
     }
     encoderMaxHeaderTableSize = headerTableSize;
+    maxHeaderTableSizeChangeRequired = false;
     headerTable.setCapacity(headerTableSize);
   }
 
