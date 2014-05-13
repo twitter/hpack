@@ -15,8 +15,8 @@
  */
 package com.twitter.hpack;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 
 final class HuffmanDecoder {
 
@@ -70,8 +70,8 @@ final class HuffmanDecoder {
    *         output stream has been closed.
    */
   public byte[] decode(byte[] buf) throws IOException {
-    // FIXME
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    int length = 0;
+    byte[] temp = new byte[32];
     Node node = root;
     int current = 0;
     int nbits = 0;
@@ -84,7 +84,7 @@ final class HuffmanDecoder {
         node = node.children[c];
         if (node.children == null) {
           // terminal node
-          baos.write(node.symbol);
+          temp = write(temp, length++, (byte) node.symbol);
           nbits -= node.terminalBits;
           node = root;
         } else {
@@ -100,12 +100,19 @@ final class HuffmanDecoder {
       if (node.children != null || node.terminalBits > nbits) {
         break;
       }
-      baos.write(node.symbol);
+      temp = write(temp, length++, (byte) node.symbol);
       nbits -= node.terminalBits;
       node = root;
     }
 
-    return baos.toByteArray();
+    return Arrays.copyOf(temp, length);
+  }
+
+  /** Returns {@code out} or a new array if it needed to grow. */
+  private static byte[] write(byte[] out, int pos, byte symbol) {
+    if (pos == out.length) out = Arrays.copyOf(out, pos * 2);
+    out[pos] = symbol;
+    return out;
   }
 
   private static final class Node {
