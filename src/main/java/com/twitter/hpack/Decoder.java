@@ -25,6 +25,14 @@ import static com.twitter.hpack.HeaderField.HEADER_ENTRY_OVERHEAD;
 public final class Decoder {
 
   private static final IOException DECOMPRESSION_EXCEPTION = new IOException("decompression failure");
+  private static final IOException ILLEGAL_INDEX_VALUE =
+      new IOException("illegal index value");
+  private static final IOException ILLEGAL_ENCODING_CONTEXT_UPDATE =
+      new IOException("illegal encoding context update");
+  private static final IOException INVALID_MAX_HEADER_TABLE_SIZE =
+      new IOException("invalid max header table size");
+  private static final IOException MAX_HEADER_TABLE_SIZE_CHANGE_REQUIRED =
+      new IOException("max header table size change required");
 
   private static final byte[] EMPTY = {};
 
@@ -89,13 +97,13 @@ public final class Decoder {
         byte b = (byte) in.read();
         if (maxHeaderTableSizeChangeRequired && (b & 0xF0) != 0x20) {
           // Encoder MUST signal maximum header table size change
-          throw DECOMPRESSION_EXCEPTION;
+          throw MAX_HEADER_TABLE_SIZE_CHANGE_REQUIRED;
         }
         if (b < 0) {
           // Indexed Header Field
           index = b & 0x7F;
           if (index == 0) {
-            throw DECOMPRESSION_EXCEPTION;
+            throw ILLEGAL_INDEX_VALUE;
           } else if (index == 0x7F) {
             state = State.READ_INDEXED_HEADER;
           } else {
@@ -123,7 +131,7 @@ public final class Decoder {
               clearReferenceSet();
               state = State.READ_HEADER_REPRESENTATION;
             } else {
-              throw DECOMPRESSION_EXCEPTION;
+              throw ILLEGAL_ENCODING_CONTEXT_UPDATE;
             }
           } else {
             // Maximum Header Table Size Change
@@ -429,7 +437,7 @@ public final class Decoder {
 
   private void setHeaderTableSize(int headerTableSize) throws IOException {
     if (headerTableSize > maxHeaderTableSize) {
-      throw DECOMPRESSION_EXCEPTION;
+      throw INVALID_MAX_HEADER_TABLE_SIZE;
     }
     encoderMaxHeaderTableSize = headerTableSize;
     maxHeaderTableSizeChangeRequired = false;
@@ -445,7 +453,7 @@ public final class Decoder {
       HeaderField headerField = StaticTable.getEntry(index - headerTableLength);
       name = headerField.name;
     } else {
-      throw DECOMPRESSION_EXCEPTION;
+      throw ILLEGAL_INDEX_VALUE;
     }
   }
 
@@ -464,7 +472,7 @@ public final class Decoder {
       HeaderField headerField = StaticTable.getEntry(index - headerTableLength);
       insertHeader(headerListener, headerField.name, headerField.value, IndexType.INCREMENTAL);
     } else {
-      throw DECOMPRESSION_EXCEPTION;
+      throw ILLEGAL_INDEX_VALUE;
     }
   }
 

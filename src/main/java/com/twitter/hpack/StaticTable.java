@@ -27,6 +27,7 @@ final class StaticTable {
   private static final String EMPTY = "";
 
   // Appendix B: Static Table
+  // http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-08#appendix-B
   private static final List<HeaderField> STATIC_TABLE = Arrays.asList(
     /*  1 */ new HeaderField(":authority", EMPTY),
     /*  2 */ new HeaderField(":method", "GET"),
@@ -43,7 +44,7 @@ final class StaticTable {
     /* 13 */ new HeaderField(":status", "404"),
     /* 14 */ new HeaderField(":status", "500"),
     /* 15 */ new HeaderField("accept-charset", EMPTY),
-    /* 16 */ new HeaderField("accept-encoding", EMPTY),
+    /* 16 */ new HeaderField("accept-encoding", "gzip, deflate"),
     /* 17 */ new HeaderField("accept-language", EMPTY),
     /* 18 */ new HeaderField("accept-ranges", EMPTY),
     /* 19 */ new HeaderField("accept", EMPTY),

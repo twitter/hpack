@@ -1,4 +1,5 @@
 {
+  "max_header_table_size": 0,
   "force_huffman_off": true,
   "header_blocks":
   [

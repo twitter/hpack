@@ -1,13 +1,16 @@
 {
+  "use_indexing": false,
+  "sensitive_headers": true,
   "force_huffman_off": true,
   "header_blocks":
   [
     {
       "headers": [
-        { ":method": "GET" }
+        { "password": "secret" }
       ],
       "encoded": [
-        "82"
+        "1008 7061 7373 776f 7264 0673 6563 7265",
+        "74"
       ]
     }
   ]
