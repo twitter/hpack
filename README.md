@@ -1,4 +1,4 @@
-HPACK [![Build Status](https://travis-ci.org/twitter/hpack.png?branch=master)](https://travis-ci.org/twitter/hpack)
+HPACK [![Build Status](https://travis-ci.org/twitter/hpack.png?branch=master)](https://travis-ci.org/twitter/hpack) [![Coverage Status](https://coveralls.io/repos/twitter/hpack/badge.png?branch=master)](https://coveralls.io/r/twitter/hpack?branch=master) 
 =====
 
 [Header Compression for HTTP/2](http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-08)
