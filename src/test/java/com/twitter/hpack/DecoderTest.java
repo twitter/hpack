@@ -86,29 +86,24 @@ public class DecoderTest {
     decode("FF8080808008");
   }
 
-  @Test(expected = IOException.class)
-  public void testIllegalEncodeContextUpdate() throws IOException {
-    decode("31");
-  }
-
   @Test
-  public void testMaxHeaderTableSize() throws Exception {
+  public void testHeaderTableSizeUpdate() throws Exception {
     decode("20");
     assertEquals(0, decoder.getMaxHeaderTableSize());
-    decode("2FF11F");
+    decode("3FE11F");
     assertEquals(4096, decoder.getMaxHeaderTableSize());
   }
 
   @Test(expected = IOException.class)
-  public void testIllegalMaxHeaderTableSize() throws Exception {
+  public void testIllegalHeaderTableSizeUpdate() throws Exception {
     // max header table size = SETTINGS_HEADER_TABLE_SIZE + 1
-    decode("2FF21F");
+    decode("3FE21F");
   }
 
   @Test(expected = IOException.class)
   public void testInsidiousMaxHeaderTableSize() throws IOException {
     // max header table size sign overflow
-    decode("2FF1FFFFFF07");
+    decode("3FE1FFFFFF07");
   }
 
   @Test
@@ -119,17 +114,17 @@ public class DecoderTest {
   }
 
   @Test(expected = IOException.class)
-  public void testTooLargeMaxHeaderTableSize() throws Exception {
+  public void testTooLargeHeaderTableSizeUpdate() throws Exception {
     decoder.setMaxHeaderTableSize(0);
     assertEquals(0, decoder.getMaxHeaderTableSize());
     decode("21"); // encoder max header table size not small enough
   }
 
   @Test(expected = IOException.class)
-  public void testMissingMaxHeaderTableSize() throws Exception {
+  public void testMissingHeaderTableSizeUpdate() throws Exception {
     decoder.setMaxHeaderTableSize(0);
     assertEquals(0, decoder.getMaxHeaderTableSize());
-    decode("30"); // clear reference set instead of size change
+    decode("81");
   }
 
   @Test(expected = IOException.class)
@@ -141,17 +136,9 @@ public class DecoderTest {
   public void testLiteralWithIncrementalIndexingCompleteEviction() throws Exception {
     // Verify indexed host header
     decode("4004" + hex("name") + "05" + hex("value"));
-    verify(mockListener).emitHeader(getBytes("name"), getBytes("value"), false);
+    verify(mockListener).addHeader(getBytes("name"), getBytes("value"), false);
     verifyNoMoreInteractions(mockListener);
-
-    reset(mockListener);
-    assertFalse(decoder.endHeaderBlock(mockListener));
-    verifyNoMoreInteractions(mockListener);
-
-    // Verify header is added to the reference set
-    assertFalse(decoder.endHeaderBlock(mockListener));
-    verify(mockListener).emitHeader(getBytes("name"), getBytes("value"), false);
-    verifyNoMoreInteractions(mockListener);
+    assertFalse(decoder.endHeaderBlock());
 
     reset(mockListener);
     StringBuilder sb = new StringBuilder();
@@ -160,26 +147,18 @@ public class DecoderTest {
     }
     String value = sb.toString();
     sb = new StringBuilder();
-    sb.append("427F811F");
+    sb.append("417F811F");
     for (int i = 0; i < 4096; i++) {
       sb.append("61"); // 'a'
     }
     decode(sb.toString());
-    verify(mockListener).emitHeader(getBytes(":authority"), getBytes(value), false);
+    verify(mockListener).addHeader(getBytes(":authority"), getBytes(value), false);
     verifyNoMoreInteractions(mockListener);
+    assertFalse(decoder.endHeaderBlock());
 
-    reset(mockListener);
-    assertFalse(decoder.endHeaderBlock(mockListener));
-    verifyNoMoreInteractions(mockListener);
-
-    // Verify all headers has been evicted from table
-    assertFalse(decoder.endHeaderBlock(mockListener));
-    verifyNoMoreInteractions(mockListener);
-
-    // Verify next header is inserted at index 0
-    // remove from reference set, insert into reference set and emit
-    decode("4004" + hex("name") + "05" + hex("value") + "8181");
-    verify(mockListener, times(2)).emitHeader(getBytes("name"), getBytes("value"), false);
+    // Verify next header is inserted at index 62
+    decode("4004" + hex("name") + "05" + hex("value") + "BE");
+    verify(mockListener, times(2)).addHeader(getBytes("name"), getBytes("value"), false);
     verifyNoMoreInteractions(mockListener);
   }
 
@@ -196,13 +175,11 @@ public class DecoderTest {
     verifyNoMoreInteractions(mockListener);
 
     // Verify header block is reported as truncated
-    assertTrue(decoder.endHeaderBlock(mockListener));
-    verifyNoMoreInteractions(mockListener);
+    assertTrue(decoder.endHeaderBlock());
 
-    // Verify next header is inserted at index 0
-    // remove from reference set, insert into reference set and emit
-    decode("4004" + hex("name") + "05" + hex("value") + "8181");
-    verify(mockListener, times(2)).emitHeader(getBytes("name"), getBytes("value"), false);
+    // Verify next header is inserted at index 62
+    decode("4004" + hex("name") + "05" + hex("value") + "BE");
+    verify(mockListener, times(2)).addHeader(getBytes("name"), getBytes("value"), false);
     verifyNoMoreInteractions(mockListener);
   }
 
@@ -220,13 +197,11 @@ public class DecoderTest {
     verifyNoMoreInteractions(mockListener);
 
     // Verify header block is reported as truncated
-    assertTrue(decoder.endHeaderBlock(mockListener));
-    verifyNoMoreInteractions(mockListener);
+    assertTrue(decoder.endHeaderBlock());
 
-    // Verify next header is inserted at index 0
-    // remove from reference set, insert into reference set and emit
-    decode("4004" + hex("name") + "05" + hex("value") + "8181");
-    verify(mockListener, times(2)).emitHeader(getBytes("name"), getBytes("value"), false);
+    // Verify next header is inserted at index 62
+    decode("4004" + hex("name") + "05" + hex("value") + "BE");
+    verify(mockListener, times(2)).addHeader(getBytes("name"), getBytes("value"), false);
     verifyNoMoreInteractions(mockListener);
   }
 
@@ -235,7 +210,7 @@ public class DecoderTest {
     decode("000005" + hex("value"));
   }
 
-  @Test
+  @Test(expected = IOException.class)
   public void testLiteralWithoutIndexingWithLargeName() throws Exception {
     // Ignore header name that exceeds max header size
     StringBuilder sb = new StringBuilder();
@@ -248,16 +223,13 @@ public class DecoderTest {
     verifyNoMoreInteractions(mockListener);
 
     // Verify header block is reported as truncated
-    assertTrue(decoder.endHeaderBlock(mockListener));
-    verifyNoMoreInteractions(mockListener);
+    assertTrue(decoder.endHeaderBlock());
 
     // Verify table is unmodified
-    decode("86");
-    verify(mockListener).emitHeader(getBytes(":scheme"), getBytes("http"), false);
-    verifyNoMoreInteractions(mockListener);
+    decode("BE");
   }
 
-  @Test
+  @Test(expected = IOException.class)
   public void testLiteralWithoutIndexingWithLargeValue() throws Exception {
     // Ignore header that exceeds max header size
     StringBuilder sb = new StringBuilder();
@@ -271,13 +243,10 @@ public class DecoderTest {
     verifyNoMoreInteractions(mockListener);
 
     // Verify header block is reported as truncated
-    assertTrue(decoder.endHeaderBlock(mockListener));
-    verifyNoMoreInteractions(mockListener);
+    assertTrue(decoder.endHeaderBlock());
 
     // Verify table is unmodified
-    decode("86");
-    verify(mockListener).emitHeader(getBytes(":scheme"), getBytes("http"), false);
-    verifyNoMoreInteractions(mockListener);
+    decode("BE");
   }
 
   @Test(expected = IOException.class)
@@ -285,7 +254,7 @@ public class DecoderTest {
     decode("100005" + hex("value"));
   }
 
-  @Test
+  @Test(expected = IOException.class)
   public void testLiteralNeverIndexedWithLargeName() throws Exception {
     // Ignore header name that exceeds max header size
     StringBuilder sb = new StringBuilder();
@@ -298,16 +267,13 @@ public class DecoderTest {
     verifyNoMoreInteractions(mockListener);
 
     // Verify header block is reported as truncated
-    assertTrue(decoder.endHeaderBlock(mockListener));
-    verifyNoMoreInteractions(mockListener);
+    assertTrue(decoder.endHeaderBlock());
 
     // Verify table is unmodified
-    decode("86");
-    verify(mockListener).emitHeader(getBytes(":scheme"), getBytes("http"), false);
-    verifyNoMoreInteractions(mockListener);
+    decode("BE");
   }
 
-  @Test
+  @Test(expected = IOException.class)
   public void testLiteralNeverIndexedWithLargeValue() throws Exception {
     // Ignore header that exceeds max header size
     StringBuilder sb = new StringBuilder();
@@ -321,12 +287,9 @@ public class DecoderTest {
     verifyNoMoreInteractions(mockListener);
 
     // Verify header block is reported as truncated
-    assertTrue(decoder.endHeaderBlock(mockListener));
-    verifyNoMoreInteractions(mockListener);
+    assertTrue(decoder.endHeaderBlock());
 
     // Verify table is unmodified
-    decode("86");
-    verify(mockListener).emitHeader(getBytes(":scheme"), getBytes("http"), false);
-    verifyNoMoreInteractions(mockListener);
+    decode("BE");
   }
 }

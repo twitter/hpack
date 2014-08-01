@@ -69,7 +69,7 @@ final class TestCase {
     for (int i = 0; i < headerBlocks.size(); i++) {
       HeaderBlock headerBlock = headerBlocks.get(i);
 
-      byte[] actual = encode(encoder, headerBlock.getHeaders(), headerBlock.clearReferenceSet(), headerBlock.getMaxHeaderTableSize(), sensitiveHeaders);
+      byte[] actual = encode(encoder, headerBlock.getHeaders(), headerBlock.getMaxHeaderTableSize(), sensitiveHeaders);
 
       if (!Arrays.equals(actual, headerBlock.encodedBytes)) {
         throw new AssertionError("\nEXPECTED: " + headerBlock.getEncodedStr() +
@@ -118,13 +118,9 @@ final class TestCase {
     return new Decoder(8192, maxHeaderTableSize);
   }
 
-  private static byte[] encode(Encoder encoder, List<HeaderField> headers, boolean clearReferenceSet, int maxHeaderTableSize, boolean sensitive)
+  private static byte[] encode(Encoder encoder, List<HeaderField> headers, int maxHeaderTableSize, boolean sensitive)
       throws IOException {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
-    if (clearReferenceSet) {
-      encoder.clearReferenceSet(baos);
-    }
 
     if (maxHeaderTableSize != -1) {
       encoder.setMaxHeaderTableSize(baos, maxHeaderTableSize);
@@ -134,8 +130,6 @@ final class TestCase {
       encoder.encodeHeader(baos, e.name, e.value, sensitive);
     }
 
-    encoder.endHeaders(baos);
-
     return baos.toByteArray();
   }
 
@@ -143,7 +137,7 @@ final class TestCase {
     List<HeaderField> headers = new ArrayList<HeaderField>();
     TestHeaderListener listener = new TestHeaderListener(headers);
     decoder.decode(new ByteArrayInputStream(expected), listener);
-    decoder.endHeaderBlock(listener);
+    decoder.endHeaderBlock();
     return headers;
   }
 
@@ -156,15 +150,10 @@ final class TestCase {
   }
 
   static class HeaderBlock {
-    private boolean clearReferenceSet;
     private int maxHeaderTableSize = -1;
     private byte[] encodedBytes;
     private List<String> encoded;
     private List<HeaderField> headers;
-
-    public boolean clearReferenceSet() {
-      return clearReferenceSet;
-    }
 
     private int getMaxHeaderTableSize() {
       return maxHeaderTableSize;

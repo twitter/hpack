@@ -26,7 +26,7 @@ final class TestHeaderListener implements HeaderListener {
   }
 
   @Override
-  public void emitHeader(byte[] name, byte[] value, boolean sensitive) {
+  public void addHeader(byte[] name, byte[] value, boolean sensitive) {
     headers.add(new HeaderField(name, value));
   }
 }

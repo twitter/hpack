@@ -107,7 +107,7 @@ public final class Decoder {
           } else if (index == 0x7F) {
             state = State.READ_INDEXED_HEADER;
           } else {
-            toggleIndex(index, headerListener);
+            indexHeader(index, headerListener);
           }
         } else if ((b & 0x40) == 0x40) {
           // Literal Header Field with Incremental Indexing
@@ -123,24 +123,14 @@ public final class Decoder {
             state = State.READ_LITERAL_HEADER_VALUE_LENGTH_PREFIX;
           }
         } else if ((b & 0x20) == 0x20) {
-          // Encoding Context Update
-          index = b & 0x0F;
-          if ((b & 0x10) == 0x10) {
-            // Reference Set Emptying
-            if (index == 0) {
-              clearReferenceSet();
-              state = State.READ_HEADER_REPRESENTATION;
-            } else {
-              throw ILLEGAL_ENCODING_CONTEXT_UPDATE;
-            }
+          // Header Table Size Change
+          index = b & 0x1F;
+          // Maximum Header Table Size Change
+          if (index == 0x1F) {
+            state = State.READ_MAX_HEADER_TABLE_SIZE;
           } else {
-            // Maximum Header Table Size Change
-            if (index == 0x0F) {
-              state = State.READ_MAX_HEADER_TABLE_SIZE;
-            } else {
-              setHeaderTableSize(index);
-              state = State.READ_HEADER_REPRESENTATION;
-            }
+            setHeaderTableSize(index);
+            state = State.READ_HEADER_REPRESENTATION;
           }
         } else {
           // Literal Header Field without Indexing / never Indexed
@@ -184,7 +174,7 @@ public final class Decoder {
           throw DECOMPRESSION_EXCEPTION;
         }
 
-        toggleIndex(index + headerIndex, headerListener);
+        indexHeader(index + headerIndex, headerListener);
         state = State.READ_HEADER_REPRESENTATION;
         break;
 
@@ -399,14 +389,7 @@ public final class Decoder {
    * End the current header block. Returns if the header field has been truncated.
    * This must be called after the header block has been completely decoded.
    */
-  public boolean endHeaderBlock(HeaderListener headerListener) {
-    for (int index = 1; index <= headerTable.length(); index++) {
-      HeaderField headerField = headerTable.getEntry(index);
-      if (headerField.inReferenceSet && !headerField.emitted) {
-        emitHeader(headerListener, headerField.name, headerField.value, false);
-      }
-      headerField.emitted = false;
-    }
+  public boolean endHeaderBlock() {
     boolean truncated = headerSize > maxHeaderSize;
     reset();
     return truncated;
@@ -445,39 +428,31 @@ public final class Decoder {
   }
 
   private void readName(int index) throws IOException {
-    int headerTableLength = headerTable.length();
-    if (index <= headerTableLength) {
-      HeaderField headerField = headerTable.getEntry(index);
+    if (index <= StaticTable.length) {
+      HeaderField headerField = StaticTable.getEntry(index);
       name = headerField.name;
-    } else if (index - headerTableLength <= StaticTable.length) {
-      HeaderField headerField = StaticTable.getEntry(index - headerTableLength);
+    } else if (index - StaticTable.length <= headerTable.length()) {
+      HeaderField headerField = headerTable.getEntry(index - StaticTable.length);
       name = headerField.name;
     } else {
       throw ILLEGAL_INDEX_VALUE;
     }
   }
 
-  private void toggleIndex(int index, HeaderListener headerListener) throws IOException {
-    int headerTableLength = headerTable.length();
-    if (index <= headerTableLength) {
-      HeaderField headerField = headerTable.getEntry(index);
-      if (headerField.inReferenceSet) {
-        headerField.inReferenceSet = false;
-      } else {
-        headerField.inReferenceSet = true;
-        headerField.emitted = true;
-        emitHeader(headerListener, headerField.name, headerField.value, false);
-      }
-    } else if (index - headerTableLength <= StaticTable.length) {
-      HeaderField headerField = StaticTable.getEntry(index - headerTableLength);
-      insertHeader(headerListener, headerField.name, headerField.value, IndexType.INCREMENTAL);
+  private void indexHeader(int index, HeaderListener headerListener) throws IOException {
+    if (index <= StaticTable.length) {
+      HeaderField headerField = StaticTable.getEntry(index);
+      addHeader(headerListener, headerField.name, headerField.value, false);
+    } else if (index - StaticTable.length <= headerTable.length()) {
+      HeaderField headerField = headerTable.getEntry(index - StaticTable.length);
+      addHeader(headerListener, headerField.name, headerField.value, false);
     } else {
       throw ILLEGAL_INDEX_VALUE;
     }
   }
 
   private void insertHeader(HeaderListener headerListener, byte[] name, byte[] value, IndexType indexType) {
-    emitHeader(headerListener, name, value, indexType == IndexType.NEVER);
+    addHeader(headerListener, name, value, indexType == IndexType.NEVER);
 
     switch (indexType) {
       case NONE:
@@ -485,10 +460,7 @@ public final class Decoder {
         break;
 
       case INCREMENTAL:
-        HeaderField headerField = new HeaderField(name, value);
-        headerField.emitted = true;
-        headerField.inReferenceSet = true;
-        headerTable.add(headerField);
+        headerTable.add(new HeaderField(name, value));
         break;
 
       default:
@@ -496,25 +468,17 @@ public final class Decoder {
     }
   }
 
-  private void emitHeader(HeaderListener headerListener, byte[] name, byte[] value, boolean sensitive) {
+  private void addHeader(HeaderListener headerListener, byte[] name, byte[] value, boolean sensitive) {
     if (name.length == 0) {
       throw new AssertionError("name is empty");
     }
     long newSize = headerSize + name.length + value.length;
     if (newSize <= maxHeaderSize) {
-      headerListener.emitHeader(name, value, sensitive);
+      headerListener.addHeader(name, value, sensitive);
       headerSize = (int) newSize;
     } else {
       // truncation will be reported during endHeaderBlock
       headerSize = maxHeaderSize + 1;
-    }
-  }
-
-  private void clearReferenceSet() {
-    for (int index = 1; index <= headerTable.length(); index++) {
-      HeaderField headerField = headerTable.getEntry(index);
-      headerField.inReferenceSet = false;
-      headerField.emitted = false;
     }
   }
 

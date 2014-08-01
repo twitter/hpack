@@ -12,25 +12,11 @@
     },
     {
       "headers": [
-        { ":authority": "twitter.com" }
-      ],
-      "encoded": [
-      ]
-    },
-    {
-      "headers": [
         { ":authority": "twitter.com" },
         { ":authority": "twitter.com" }
       ],
       "encoded": [
-        "8181 8181"
-      ]
-    },
-    {
-      "headers": [
-      ],
-      "encoded": [
-        "81"
+        "bebe"
       ]
     },
     {
@@ -43,18 +29,11 @@
     },
     {
       "headers": [
-        { "name": "value" }
-      ],
-      "encoded": [
-      ]
-    },
-    {
-      "headers": [
         { "name": "value" },
         { "name": "value" }
       ],
       "encoded": [
-        "8181 8181"
+        "bebe"
       ]
     },
     {
@@ -62,7 +41,7 @@
         { "name": "" }
       ],
       "encoded": [
-        "4100 82"
+        "7e00"
       ]
     }
   ]

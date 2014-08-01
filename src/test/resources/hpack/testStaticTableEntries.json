@@ -67,10 +67,10 @@
         { "www-authenticate": "" }
       ],
       "encoded": [
-        "8183 8587 898b 8d8f 9193 9597 999b 9d9f",
-        "a1a3 a5a7 a9ab adaf b1b3 b5b7 b9bb bdbf",
-        "c1c3 c5c7 c9cb cdcf d1d3 d5d7 d9db dddf",
-        "e1e3 e5e7 e9eb edef f1f3 f5f7 f9"
+        "8182 8384 8586 8788 898a 8b8c 8d8e 8f90",
+        "9192 9394 9596 9798 999a 9b9c 9d9e 9fa0",
+        "a1a2 a3a4 a5a6 a7a8 a9aa abac adae afb0",
+        "b1b2 b3b4 b5b6 b7b8 b9ba bbbc bd"
       ]
     }
   ]

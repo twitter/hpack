@@ -10,7 +10,7 @@
         { ":authority": "www.example.com" }
       ],
       "encoded": [
-        "8287 8644 8cf1 e3c2 e5f2 3a6b a0ab 90f4",
+        "8286 8441 8cf1 e3c2 e5f2 3a6b a0ab 90f4",
         "ff"
       ]
     },
@@ -23,11 +23,10 @@
         { "cache-control": "no-cache" }
       ],
       "encoded": [
-        "5c86 a8eb 1064 9cbf"
+        "8286 84be 5886 a8eb 1064 9cbf"
       ]
     },
     {
-      "clear_reference_set": true,
       "headers": [
         { ":method": "GET" },
         { ":scheme": "https" },
@@ -36,8 +35,8 @@
         { "custom-key": "custom-value" }
       ],
       "encoded": [
-        "3085 8c8b 8440 8825 a849 e95b a97d 7f89",
-        "25a8 49e9 5bb8 e8b4 bf"
+        "8287 85bf 4088 25a8 49e9 5ba9 7d7f 8925",
+        "a849 e95b b8e8 b4bf"
       ]
     }
   ]

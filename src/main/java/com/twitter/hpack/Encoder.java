@@ -99,48 +99,18 @@ public final class Encoder {
 
     HeaderEntry headerField = getEntry(name, value);
     if (headerField != null) {
-      int index = getIndex(headerField.index);
-      if (headerField.inReferenceSet) {
-        if (headerField.emitted) {
-          // This header field will be emitted by the decoder once the header block is complete.
-          // Since we have seen this header field before we must emit it twice.
-          encodeInteger(out, 0x80, 7, index); // remove from reference set
-          encodeInteger(out, 0x80, 7, index); // insert into reference set and emit
-          encodeInteger(out, 0x80, 7, index); // remove from reference set
-          encodeInteger(out, 0x80, 7, index); // insert into reference set and emit
-
-          // We indicate that that the decoder will not emit this header again after the
-          // header block is complete by setting inReferenceSet to false. It will be set
-          // to true again by endHeaders after the header block is complete.
-          headerField.inReferenceSet = false;
-        } else {
-          // Mark this entry as "to-be-emitted" indicating that it is in the decoder's reference
-          // set and should be emitted by the decoder after the header block is complete.
-          headerField.emitted = true;
-        }
-      } else {
-        if (headerField.emitted) {
-          // This header field has already been emitted by the decoder so we must remove it
-          // from the reference set before we can emit it again.
-          encodeInteger(out, 0x80, 7, index);
-        }
-
-        // Section 4.2 - Indexed Header Field
-        encodeInteger(out, 0x80, 7, index);
-        headerField.emitted = true;
-      }
+      int index = getIndex(headerField.index) + StaticTable.length;
+      // Section 4.2 - Indexed Header Field
+      encodeInteger(out, 0x80, 7, index);
     } else {
       int staticTableIndex = StaticTable.getIndex(name, value);
-      if (staticTableIndex != -1 && useIndexing) {
+      if (staticTableIndex != -1) {
         // Section 4.2 - Indexed Header Field
-        int nameIndex = staticTableIndex + length();
-        ensureCapacity(out, headerSize);
-        add(name, value);
-        encodeInteger(out, 0x80, 7, nameIndex);
+        encodeInteger(out, 0x80, 7, staticTableIndex);
       } else {
         int nameIndex = getNameIndex(name);
         if (useIndexing) {
-          ensureCapacity(out, headerSize);
+          ensureCapacity(headerSize);
         }
         IndexType indexType = useIndexing ? IndexType.INCREMENTAL : IndexType.NONE;
         encodeLiteral(out, name, value, indexType, nameIndex);
@@ -152,39 +122,6 @@ public final class Encoder {
   }
 
   /**
-   * End the current header set. This must be called after all header fields
-   * in the current header set have been encoded.
-   */
-  public void endHeaders(OutputStream out) throws IOException {
-    HeaderEntry entry = head.before;
-    while (entry != head) {
-      if (entry.emitted) {
-        // The header field either has been emitted or will be emitted by the decoder.
-        entry.inReferenceSet = true;
-        entry.emitted = false;
-      } else if (entry.inReferenceSet) {
-        // The header field is not part of this header set and must be removed from the reference set.
-        encodeInteger(out, 0x80, 7, getIndex(entry.index));
-        entry.inReferenceSet = false;
-      }
-      entry = entry.before;
-    }
-  }
-
-  /**
-   * Clear the current reference set.
-   */
-  public void clearReferenceSet(OutputStream out) throws IOException {
-    HeaderEntry entry = head.before;
-    while (entry != head) {
-      entry.inReferenceSet = false;
-      entry.emitted = false;
-      entry = entry.before;
-    }
-    out.write(0x30);
-  }
-
-  /**
    * Set the maximum header table size.
    */
   public void setMaxHeaderTableSize(OutputStream out, int maxHeaderTableSize) throws IOException {
@@ -193,10 +130,10 @@ public final class Encoder {
     }
     int neededSize = size - maxHeaderTableSize;
     if (neededSize > 0) {
-      ensureCapacity(out, neededSize);
+      ensureCapacity(neededSize);
     }
     this.capacity = maxHeaderTableSize;
-    encodeInteger(out, 0x20, 4, maxHeaderTableSize);
+    encodeInteger(out, 0x20, 5, maxHeaderTableSize);
   }
 
   /**
@@ -289,11 +226,11 @@ public final class Encoder {
   }
 
   private int getNameIndex(byte[] name) {
-    int index = getIndex(name);
+    int index = StaticTable.getIndex(name);
     if (index == -1) {
-      index = StaticTable.getIndex(name);
+      index = getIndex(name);
       if (index >= 0) {
-        index += length();
+        index += StaticTable.length;
       }
     }
     return index;
@@ -302,22 +239,14 @@ public final class Encoder {
   /**
    * Ensure that the header table has enough room to hold 'headerSize' more bytes.
    * Removes the oldest entry from the header table until sufficient space is available.
-   * If the entry is in the reference set and is marked as "to-be-emitted", its index is
-   * emitted in order to tell the peer to emit the header before it is removed from its
-   * header table as well.
    */
-  private void ensureCapacity(OutputStream out, int headerSize) throws IOException {
+  private void ensureCapacity(int headerSize) throws IOException {
     while (size + headerSize > capacity) {
       int index = length();
       if (index == 0) {
         break;
       }
-      HeaderField removed = remove();
-      if (removed.inReferenceSet && removed.emitted) {
-        // evict the entry from the reference set and emit it
-        encodeInteger(out, 0x80, 7, index);
-        encodeInteger(out, 0x80, 7, index);
-      }
+      remove();
     }
   }
 
@@ -497,7 +426,6 @@ public final class Encoder {
       this.index = index;
       this.hash = hash;
       this.next = next;
-      this.emitted = true;
     }
 
     /**

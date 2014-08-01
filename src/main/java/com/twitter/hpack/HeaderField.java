@@ -31,9 +31,6 @@ class HeaderField implements Comparable<HeaderField> {
   final byte[] name;
   final byte[] value;
 
-  boolean emitted = false;
-  boolean inReferenceSet = false;
-
   // This constructor can only be used if name and value are ISO-8859-1 encoded.
   HeaderField(String name, String value) {
     this(name.getBytes(ISO_8859_1), value.getBytes(ISO_8859_1));

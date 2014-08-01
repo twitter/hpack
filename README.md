@@ -1,7 +1,7 @@
-HPACK [![Build Status](https://travis-ci.org/twitter/hpack.png?branch=master)](https://travis-ci.org/twitter/hpack) [![Coverage Status](https://coveralls.io/repos/twitter/hpack/badge.png?branch=master)](https://coveralls.io/r/twitter/hpack?branch=master) 
+HPACK [![Build Status](https://travis-ci.org/twitter/hpack.png?branch=master)](https://travis-ci.org/twitter/hpack) [![Coverage Status](https://coveralls.io/repos/twitter/hpack/badge.png?branch=master)](https://coveralls.io/r/twitter/hpack?branch=master)
 =====
 
-[Header Compression for HTTP/2](http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-08)
+[Header Compression for HTTP/2](http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-09)
 
 ## Download
 
@@ -11,7 +11,7 @@ HPACK can be downloaded from the Maven central repository. Add the following dep
 <dependency>
     <groupId>com.twitter</groupId>
     <artifactId>hpack</artifactId>
-    <version>0.8.0</version>
+    <version>0.9.0</version>
 </dependency>
 ```
 
@@ -31,13 +31,12 @@ This library provides support for compression of header sets into header blocks.
       // encode header set into header block
       Encoder encoder = new Encoder(maxHeaderTableSize);
       encoder.encodeHeader(out, name, value, sensitive);
-      encoder.endHeaders(out);
 
       ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
 
       HeaderListener listener = new HeaderListener() {
         @Override
-        public void emitHeader(byte[] name, byte[] value, boolean sensitive) {
+        public void addHeader(byte[] name, byte[] value, boolean sensitive) {
           // handle header field
         }
       };
@@ -45,7 +44,7 @@ This library provides support for compression of header sets into header blocks.
       // decode header block into header set
       Decoder decoder = new Decoder(maxHeaderSize, maxHeaderTableSize);
       decoder.decode(in, listener);
-      decoder.endHeaderBlock(listener);
+      decoder.endHeaderBlock();
     } catch (IOException e) {
       // handle exception
     }

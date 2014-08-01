@@ -13,12 +13,6 @@
     },
     {
       "headers": [
-      ],
-      "encoded": [
-      ]
-    },
-    {
-      "headers": [
         { "name": "value" }
       ],
       "encoded": [
@@ -27,22 +21,10 @@
     },
     {
       "headers": [
-      ],
-      "encoded": [
-      ]
-    },
-    {
-      "headers": [
         { "name": "" }
       ],
       "encoded": [
         "0004 6e61 6d65 00"
-      ]
-    },
-    {
-      "headers": [
-      ],
-      "encoded": [
       ]
     }
   ]

@@ -11,31 +11,11 @@
     },
     {
       "headers": [
-        { ":scheme": "http" }
-      ],
-      "encoded": [
-      ]
-    },
-    {
-      "headers": [
-      ],
-      "encoded": [
-        "81"
-      ]
-    },
-    {
-      "headers": [
-      ],
-      "encoded": [
-      ]
-    },
-    {
-      "headers": [
         { ":scheme": "http" },
         { ":scheme": "http" }
       ],
       "encoded": [
-        "818181"
+        "8686"
       ]
     }
   ]

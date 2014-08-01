@@ -19,7 +19,7 @@
         { "x-custom": "val" }
       ],
       "encoded": [
-        "8181 8181"
+        "bfbe be"
       ]
     },
     {
@@ -30,20 +30,7 @@
         { "x-custom": "val" }
       ],
       "encoded": [
-        "4082 94e7 838c 767f 8282 8282"
-      ]
-    },
-    {
-      "headers": [
-        { ":path": "/somepath" },
-        { "x-custom": "val" },
-        { "foo": "bar" },
-        { "x-custom": "val" },
-        { "foo": "bar" },
-        { "foo": "bar" }
-      ],
-      "encoded": [
-        "8282 8282 8181 8181 8181"
+        "bfbe 4082 94e7 838c 767f bf"
       ]
     },
     {
@@ -51,32 +38,7 @@
         { ":path": "/somepath" }
       ],
       "encoded": [
-        "8182"
-      ]
-    },
-    {
-      "headers": [
-        { ":path": "/somepath" },
-        { "x-custom": "val" },
-        { "foo": "bar" },
-        { "x-custom": "val" },
-        { "foo": "bar" },
-        { "foo": "bar" }
-      ],
-      "encoded": [
-        "8281 8282 8181 8181"
-      ]
-    },
-    {
-      "headers": [
-        { ":path": "/somepath" },
-        { "x-custom2": "val" },
-        { "x-custom2": "val" },
-        { "x-custom2": "val" }
-      ],
-      "encoded": [
-        "4087 f2b1 2d42 4f48 bf83 ee3a 3f81 8181",
-        "8182 83"
+        "c0"
       ]
     }
   ]
