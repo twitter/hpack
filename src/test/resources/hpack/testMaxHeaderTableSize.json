@@ -16,12 +16,13 @@
       ]
     },
     {
-      "max_header_table_size": 64,
+      "max_header_table_size": 81,
       "headers": [
-        { "name3": "val3" }
+        { "name3": "val3" },
+        { "name2": "val2" }
       ],
       "encoded": [
-        "3f21 be"
+        "3f32 be40 056e 616d 6532 0476 616c 32"
       ]
     },
     {
@@ -32,8 +33,8 @@
         { "name3": "val3" }
       ],
       "encoded": [
-        "3f61 4005 6e61 6d65 3104 7661 6c31 4005",
-        "6e61 6d65 3204 7661 6c32 c0"
+        "3f61 4005 6e61 6d65 3104 7661 6c31 bf40",
+        "056e 616d 6533 0476 616c 33"
       ]
     }
   ]

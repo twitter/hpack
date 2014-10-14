@@ -128,11 +128,8 @@ public final class Encoder {
     if (maxHeaderTableSize < 0) {
       throw new IllegalArgumentException("Illegal Capacity: "+ maxHeaderTableSize);
     }
-    int neededSize = size - maxHeaderTableSize;
-    if (neededSize > 0) {
-      ensureCapacity(neededSize);
-    }
     this.capacity = maxHeaderTableSize;
+    ensureCapacity(0);
     encodeInteger(out, 0x20, 5, maxHeaderTableSize);
   }
 
