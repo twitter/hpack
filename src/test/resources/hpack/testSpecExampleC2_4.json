@@ -1,15 +1,17 @@
 {
-  "use_indexing": false,
   "force_huffman_off": true,
   "header_blocks":
   [
     {
       "headers": [
-        { ":path": "/sample/path" }
+        { ":method": "GET" }
       ],
       "encoded": [
-        "040c 2f73 616d 706c 652f 7061 7468"
-      ]
+        "82"
+      ],
+      "dynamic_table": [
+      ],
+      "table_size": 0
     }
   ]
 }

@@ -1,7 +1,7 @@
 HPACK [![Build Status](https://travis-ci.org/twitter/hpack.png?branch=master)](https://travis-ci.org/twitter/hpack) [![Coverage Status](https://coveralls.io/repos/twitter/hpack/badge.png?branch=master)](https://coveralls.io/r/twitter/hpack?branch=master)
 =====
 
-[Header Compression for HTTP/2](http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-09)
+[Header Compression for HTTP/2](http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-10)
 
 ## Download
 
@@ -11,7 +11,7 @@ HPACK can be downloaded from the Maven central repository. Add the following dep
 <dependency>
     <groupId>com.twitter</groupId>
     <artifactId>hpack</artifactId>
-    <version>0.9.1</version>
+    <version>0.10.0</version>
 </dependency>
 ```
 

@@ -1,5 +1,5 @@
 {
-  "force_huffman_on": true,
+  "force_huffman_off": true,
   "header_blocks":
   [
     {
@@ -10,9 +10,13 @@
         { ":authority": "www.example.com" }
       ],
       "encoded": [
-        "8286 8441 8cf1 e3c2 e5f2 3a6b a0ab 90f4",
-        "ff"
-      ]
+        "8286 8441 0f77 7777 2e65 7861 6d70 6c65",
+        "2e63 6f6d"
+      ],
+      "dynamic_table": [
+        { ":authority": "www.example.com" }
+      ],
+      "table_size": 57
     },
     {
       "headers": [
@@ -23,8 +27,13 @@
         { "cache-control": "no-cache" }
       ],
       "encoded": [
-        "8286 84be 5886 a8eb 1064 9cbf"
-      ]
+        "8286 84be 5808 6e6f 2d63 6163 6865"
+      ],
+      "dynamic_table": [
+        { "cache-control": "no-cache" },
+        { ":authority": "www.example.com" }
+      ],
+      "table_size": 110
     },
     {
       "headers": [
@@ -35,9 +44,15 @@
         { "custom-key": "custom-value" }
       ],
       "encoded": [
-        "8287 85bf 4088 25a8 49e9 5ba9 7d7f 8925",
-        "a849 e95b b8e8 b4bf"
-      ]
+        "8287 85bf 400a 6375 7374 6f6d 2d6b 6579",
+        "0c63 7573 746f 6d2d 7661 6c75 65"
+      ],
+      "dynamic_table": [
+        { "custom-key": "custom-value" },
+        { "cache-control": "no-cache" },
+        { ":authority": "www.example.com" }
+      ],
+      "table_size": 164
     }
   ]
 }

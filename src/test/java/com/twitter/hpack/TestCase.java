@@ -23,7 +23,6 @@ import java.io.InputStreamReader;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -66,14 +65,33 @@ final class TestCase {
   void testCompress() throws Exception {
     Encoder encoder = createEncoder();
 
-    for (int i = 0; i < headerBlocks.size(); i++) {
-      HeaderBlock headerBlock = headerBlocks.get(i);
+    for (HeaderBlock headerBlock : headerBlocks) {
 
       byte[] actual = encode(encoder, headerBlock.getHeaders(), headerBlock.getMaxHeaderTableSize(), sensitiveHeaders);
 
       if (!Arrays.equals(actual, headerBlock.encodedBytes)) {
-        throw new AssertionError("\nEXPECTED: " + headerBlock.getEncodedStr() +
-            "\nACTUAL  : " + Hex.encodeHexString(actual));
+        throw new AssertionError(
+            "\nEXPECTED:\n" + headerBlock.getEncodedStr() +
+            "\nACTUAL:\n" + Hex.encodeHexString(actual));
+      }
+
+      List<HeaderField> actualDynamicTable = new ArrayList<HeaderField>();
+      for (int index = 0; index < encoder.length(); index++) {
+        actualDynamicTable.add(encoder.getHeaderField(index));
+      }
+
+      List<HeaderField> expectedDynamicTable = headerBlock.getDynamicTable();
+
+      if (!expectedDynamicTable.equals(actualDynamicTable)) {
+        throw new AssertionError(
+            "\nEXPECTED DYNAMIC TABLE:\n" + expectedDynamicTable +
+            "\nACTUAL DYNAMIC TABLE:\n" + actualDynamicTable);
+      }
+
+      if (headerBlock.getTableSize() != encoder.size()) {
+        throw new AssertionError(
+            "\nEXPECTED TABLE SIZE: " + headerBlock.getTableSize() +
+            "\n ACTUAL TABLE SIZE : " + encoder.size());
       }
     }
   }
@@ -81,21 +99,38 @@ final class TestCase {
   void testDecompress() throws Exception {
     Decoder decoder = createDecoder();
 
-    for (int i = 0; i < headerBlocks.size(); i++) {
-      HeaderBlock headerBlock = headerBlocks.get(i);
+    for (HeaderBlock headerBlock : headerBlocks) {
 
       List<HeaderField> actualHeaders = decode(decoder, headerBlock.encodedBytes);
-
-      Collections.sort(actualHeaders);
 
       List<HeaderField> expectedHeaders = new ArrayList<HeaderField>();
       for (HeaderField h : headerBlock.getHeaders()) {
         expectedHeaders.add(new HeaderField(h.name, h.value));
       }
-      Collections.sort(expectedHeaders);
 
       if (!expectedHeaders.equals(actualHeaders)) {
-        throw new AssertionError("\nEXPECTED:\n" + expectedHeaders + "\nACTUAL:\n" + actualHeaders);
+        throw new AssertionError(
+            "\nEXPECTED:\n" + expectedHeaders +
+            "\nACTUAL:\n" + actualHeaders);
+      }
+
+      List<HeaderField> actualDynamicTable = new ArrayList<HeaderField>();
+      for (int index = 0; index < decoder.length(); index++) {
+        actualDynamicTable.add(decoder.getHeaderField(index));
+      }
+
+      List<HeaderField> expectedDynamicTable = headerBlock.getDynamicTable();
+
+      if (!expectedDynamicTable.equals(actualDynamicTable)) {
+        throw new AssertionError(
+            "\nEXPECTED DYNAMIC TABLE:\n" + expectedDynamicTable +
+            "\nACTUAL DYNAMIC TABLE:\n" + actualDynamicTable);
+      }
+
+      if (headerBlock.getTableSize() != decoder.size()) {
+        throw new AssertionError(
+            "\nEXPECTED TABLE SIZE: " + headerBlock.getTableSize() +
+            "\n ACTUAL TABLE SIZE : " + decoder.size());
       }
     }
   }
@@ -103,7 +138,7 @@ final class TestCase {
   private Encoder createEncoder() {
     int maxHeaderTableSize = this.maxHeaderTableSize;
     if (maxHeaderTableSize == -1) {
-      maxHeaderTableSize = HpackUtil.DEFAULT_HEADER_TABLE_SIZE;
+      maxHeaderTableSize = Integer.MAX_VALUE;
     }
 
     return new Encoder(maxHeaderTableSize, useIndexing, forceHuffmanOn, forceHuffmanOff);
@@ -112,7 +147,7 @@ final class TestCase {
   private Decoder createDecoder() {
     int maxHeaderTableSize = this.maxHeaderTableSize;
     if (maxHeaderTableSize == -1) {
-      maxHeaderTableSize = HpackUtil.DEFAULT_HEADER_TABLE_SIZE;
+      maxHeaderTableSize = Integer.MAX_VALUE;
     }
 
     return new Decoder(8192, maxHeaderTableSize);
@@ -154,6 +189,8 @@ final class TestCase {
     private byte[] encodedBytes;
     private List<String> encoded;
     private List<HeaderField> headers;
+    private List<HeaderField> dynamicTable;
+    private int tableSize;
 
     private int getMaxHeaderTableSize() {
       return maxHeaderTableSize;
@@ -165,6 +202,14 @@ final class TestCase {
 
     public List<HeaderField> getHeaders() {
       return headers;
+    }
+
+    public List<HeaderField> getDynamicTable() {
+      return dynamicTable;
+    }
+
+    public int getTableSize() {
+      return tableSize;
     }
   }
 

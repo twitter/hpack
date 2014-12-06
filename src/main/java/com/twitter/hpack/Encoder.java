@@ -37,10 +37,6 @@ public final class Encoder {
   private int size;
   private int capacity;
 
-  public Encoder() {
-    this(HpackUtil.DEFAULT_HEADER_TABLE_SIZE);
-  }
-
   public Encoder(int maxHeaderTableSize) {
     this(maxHeaderTableSize, true, false, false);
   }
@@ -249,9 +245,30 @@ public final class Encoder {
 
   /**
    * Return the number of header fields in the header table.
+   * Exposed for testing.
    */
-  private int length() {
+  int length() {
     return size == 0 ? 0 : head.after.index - head.before.index + 1;
+  }
+
+  /**
+   * Return the size of the header table.
+   * Exposed for testing.
+   */
+  int size() {
+    return size;
+  }
+
+  /**
+   * Return the header field at the given index.
+   * Exposed for testing.
+   */
+  HeaderField getHeaderField(int index) {
+    HeaderEntry entry = head;
+    while(index-- >= 0) {
+      entry = entry.before;
+    }
+    return entry;
   }
 
   /**

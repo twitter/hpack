@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 /**
- * <a href="http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-09">
+ * <a href="http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-10">
  * HPACK - Header Compression for HTTP/2</a>
  */
 package com.twitter.hpack;

@@ -68,10 +68,6 @@ public final class Decoder {
     SKIP_LITERAL_HEADER_VALUE
   }
 
-  public Decoder(int maxHeaderSize) {
-    this(maxHeaderSize, HpackUtil.DEFAULT_HEADER_TABLE_SIZE);
-  }
-
   public Decoder(int maxHeaderSize, int maxHeaderTableSize) {
     headerTable = new HeaderTable(maxHeaderTableSize);
     this.maxHeaderSize = maxHeaderSize;
@@ -416,6 +412,30 @@ public final class Decoder {
    */
   public int getMaxHeaderTableSize() {
     return headerTable.capacity();
+  }
+
+  /**
+   * Return the number of header fields in the header table.
+   * Exposed for testing.
+   */
+  int length() {
+    return headerTable.length();
+  }
+
+  /**
+   * Return the size of the header table.
+   * Exposed for testing.
+   */
+  int size() {
+    return headerTable.size();
+  }
+
+  /**
+   * Return the header field at the given index.
+   * Exposed for testing.
+   */
+  HeaderField getHeaderField(int index) {
+    return headerTable.getEntry(index + 1);
   }
 
   private void setHeaderTableSize(int headerTableSize) throws IOException {

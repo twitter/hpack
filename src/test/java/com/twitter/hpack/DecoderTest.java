@@ -34,6 +34,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 public class DecoderTest {
 
   private static final int MAX_HEADER_SIZE = 8192;
+  private static final int MAX_HEADER_TABLE_SIZE = 4096;
 
   private Decoder decoder;
   private HeaderListener mockListener;
@@ -53,7 +54,7 @@ public class DecoderTest {
 
   @Before
   public void setUp() {
-    decoder = new Decoder(MAX_HEADER_SIZE);
+    decoder = new Decoder(MAX_HEADER_SIZE, MAX_HEADER_TABLE_SIZE);
     mockListener = mock(HeaderListener.class);
   }
 
@@ -96,7 +97,7 @@ public class DecoderTest {
 
   @Test(expected = IOException.class)
   public void testIllegalHeaderTableSizeUpdate() throws Exception {
-    // max header table size = SETTINGS_HEADER_TABLE_SIZE + 1
+    // max header table size = MAX_HEADER_TABLE_SIZE + 1
     decode("3FE21F");
   }
 

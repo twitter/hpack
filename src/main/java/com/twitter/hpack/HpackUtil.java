@@ -21,9 +21,6 @@ final class HpackUtil {
 
   static final Charset ISO_8859_1 = Charset.forName("ISO-8859-1");
 
-  // TODO(jpinner) move this into HTTP/2
-  static final int DEFAULT_HEADER_TABLE_SIZE = 4096;
-
   /**
    * A string compare that doesn't leak timing information.
    */
@@ -47,15 +44,15 @@ final class HpackUtil {
     return obj;
   }
 
-  // 4.3 Literal Header Field Representations
+  // 6.2 Literal Header Field Representation
   enum IndexType {
-    INCREMENTAL, // 4.3.1. Literal Header Field with Incremental Indexing
-    NONE,        // 4.3.2. Literal Header Field without Indexing
-    NEVER        // 4.3.3. Literal Header Field never Indexed
+    INCREMENTAL, // 6.2.1. Literal Header Field with Incremental Indexing
+    NONE,        // 6.2.2. Literal Header Field without Indexing
+    NEVER        // 6.2.3. Literal Header Field never Indexed
   }
 
-  // Appendix C: Huffman Codes
-  // http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-08#appendix-C
+  // Appendix B: Huffman Codes
+  // http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-10#appendix-B
   static final int[] HUFFMAN_CODES = {
       0x1ff8,
       0x7fffd8,
