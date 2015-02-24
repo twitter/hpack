@@ -11,7 +11,7 @@ HPACK can be downloaded from the Maven central repository. Add the following dep
 <dependency>
     <groupId>com.twitter</groupId>
     <artifactId>hpack</artifactId>
-    <version>0.10.0</version>
+    <version>0.10.1</version>
 </dependency>
 ```
 
