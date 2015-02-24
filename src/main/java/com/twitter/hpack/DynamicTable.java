@@ -17,26 +17,29 @@ package com.twitter.hpack;
 
 import static com.twitter.hpack.HeaderField.HEADER_ENTRY_OVERHEAD;
 
-class HeaderTable {
+final class DynamicTable {
 
   // a circular queue of header fields
-  HeaderField[] headerTable;
+  HeaderField[] headerFields;
   int head;
   int tail;
   private int size;
-  private int capacity = -1; // ensure setCapacity creates headerTable
+  private int capacity = -1; // ensure setCapacity creates the array
 
-  HeaderTable(int initialCapacity) {
+  /**
+   * Creates a new dynamic table with the specified initial capacity.
+   */
+  DynamicTable(int initialCapacity) {
     setCapacity(initialCapacity);
   }
 
   /**
-   * Return the number of header fields in the header table.
+   * Return the number of header fields in the dynamic table.
    */
   public int length() {
     int length;
     if (head < tail) {
-      length = headerTable.length - tail + head;
+      length = headerFields.length - tail + head;
     } else {
       length = head - tail;
     }
@@ -44,7 +47,7 @@ class HeaderTable {
   }
 
   /**
-   * Return the current size of the header table.
+   * Return the current size of the dynamic table.
    * This is the sum of the size of the entries.
    */
   public int size() {
@@ -52,7 +55,7 @@ class HeaderTable {
   }
 
   /**
-   * Return the maximum allowable size of the header table.
+   * Return the maximum allowable size of the dynamic table.
    */
   public int capacity() {
     return capacity;
@@ -69,16 +72,16 @@ class HeaderTable {
     }
     int i = head - index;
     if (i < 0) {
-      return headerTable[i + headerTable.length];
+      return headerFields[i + headerFields.length];
     } else {
-      return headerTable[i];
+      return headerFields[i];
     }
   }
 
   /**
    * Add the header field to the header table.
    * Entries are evicted from the header table until the size of the table
-   * and the new header field is less than the table's capacity.
+   * and the new header field is less than or equal to the table's capacity.
    * If the size of the new entry is larger than the table's capacity,
    * the header table will be cleared.
    */
@@ -91,37 +94,37 @@ class HeaderTable {
     while (size + headerSize > capacity) {
       remove();
     }
-    headerTable[head++] = header;
+    headerFields[head++] = header;
     size += header.size();
-    if (head == headerTable.length) {
+    if (head == headerFields.length) {
       head = 0;
     }
   }
 
 
   /**
-   * Remove and return the oldest header field from the header table.
+   * Remove and return the oldest header field from the dynamic table.
    */
   public HeaderField remove() {
-    HeaderField removed = headerTable[tail];
+    HeaderField removed = headerFields[tail];
     if (removed == null) {
       return null;
     }
     size -= removed.size();
-    headerTable[tail++] = null;
-    if (tail == headerTable.length) {
+    headerFields[tail++] = null;
+    if (tail == headerFields.length) {
       tail = 0;
     }
     return removed;
   }
 
   /**
-   * Remove all entries from the header table.
+   * Remove all entries from the dynamic table.
    */
   public void clear() {
     while (tail != head) {
-      headerTable[tail++] = null;
-      if (tail == headerTable.length) {
+      headerFields[tail++] = null;
+      if (tail == headerFields.length) {
         tail = 0;
       }
     }
@@ -130,6 +133,11 @@ class HeaderTable {
     size = 0;
   }
 
+  /**
+   * Set the maximum size of the dynamic table.
+   * Entries are evicted from the header table until the size of the table
+   * is less than or equal to the maximum size.
+   */
   public void setCapacity(int capacity) {
     if (capacity < 0) {
       throw new IllegalArgumentException("Illegal Capacity: "+ capacity);
@@ -155,8 +163,8 @@ class HeaderTable {
       maxEntries++;
     }
 
-    // check if capacity change requires us to reallocate the headerTable
-    if (headerTable != null && headerTable.length == maxEntries) {
+    // check if capacity change requires us to reallocate the array
+    if (headerFields != null && headerFields.length == maxEntries) {
       return;
     }
 
@@ -166,15 +174,15 @@ class HeaderTable {
     int len = length();
     int cursor = tail;
     for (int i = 0; i < len; i++) {
-      HeaderField entry = headerTable[cursor++];
+      HeaderField entry = headerFields[cursor++];
       tmp[i] = entry;
-      if (cursor == headerTable.length) {
+      if (cursor == headerFields.length) {
         cursor = 0;
       }
     }
 
     this.tail = 0;
     this.head = tail + len;
-    this.headerTable = tmp;
+    this.headerFields = tmp;
   }
 }

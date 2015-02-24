@@ -32,7 +32,7 @@ public final class Encoder {
   private final boolean forceHuffmanOff;
 
   // a linked hash map of header fields
-  private final HeaderEntry[] headerTable = new HeaderEntry[BUCKET_SIZE];
+  private final HeaderEntry[] headerFields = new HeaderEntry[BUCKET_SIZE];
   private final HeaderEntry head = new HeaderEntry(-1, EMPTY, EMPTY, Integer.MAX_VALUE, null);
   private int size;
   private int capacity;
@@ -281,7 +281,7 @@ public final class Encoder {
     }
     int h = hash(name);
     int i = index(h);
-    for (HeaderEntry e = headerTable[i]; e != null; e = e.next) {
+    for (HeaderEntry e = headerFields[i]; e != null; e = e.next) {
       if (e.hash == h &&
           HpackUtil.equals(name, e.name) &&
           HpackUtil.equals(value, e.value)) {
@@ -302,7 +302,7 @@ public final class Encoder {
     int h = hash(name);
     int i = index(h);
     int index = -1;
-    for (HeaderEntry e = headerTable[i]; e != null; e = e.next) {
+    for (HeaderEntry e = headerFields[i]; e != null; e = e.next) {
       if (e.hash == h && HpackUtil.equals(name, e.name)) {
         index = e.index;
         break;
@@ -348,9 +348,9 @@ public final class Encoder {
 
     int h = hash(name);
     int i = index(h);
-    HeaderEntry old = headerTable[i];
+    HeaderEntry old = headerFields[i];
     HeaderEntry e = new HeaderEntry(h, name, value, head.before.index - 1, old);
-    headerTable[i] = e;
+    headerFields[i] = e;
     e.addBefore(head);
     size += headerSize;
   }
@@ -365,13 +365,13 @@ public final class Encoder {
     HeaderEntry eldest = head.after;
     int h = eldest.hash;
     int i = index(h);
-    HeaderEntry prev = headerTable[i];
+    HeaderEntry prev = headerFields[i];
     HeaderEntry e = prev;
     while (e != null) {
       HeaderEntry next = e.next;
       if (e == eldest) {
         if (prev == eldest) {
-          headerTable[i] = next;
+          headerFields[i] = next;
         } else {
           prev.next = next;
         }
@@ -389,7 +389,7 @@ public final class Encoder {
    * Remove all entries from the header table.
    */
   private void clear() {
-    Arrays.fill(headerTable, null);
+    Arrays.fill(headerFields, null);
     head.before = head.after = head;
     this.size = 0;
   }

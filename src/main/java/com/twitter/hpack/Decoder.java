@@ -24,24 +24,23 @@ import static com.twitter.hpack.HeaderField.HEADER_ENTRY_OVERHEAD;
 
 public final class Decoder {
 
-  private static final IOException DECOMPRESSION_EXCEPTION = new IOException("decompression failure");
+  private static final IOException DECOMPRESSION_EXCEPTION =
+      new IOException("decompression failure");
   private static final IOException ILLEGAL_INDEX_VALUE =
       new IOException("illegal index value");
-  private static final IOException ILLEGAL_ENCODING_CONTEXT_UPDATE =
-      new IOException("illegal encoding context update");
-  private static final IOException INVALID_MAX_HEADER_TABLE_SIZE =
-      new IOException("invalid max header table size");
-  private static final IOException MAX_HEADER_TABLE_SIZE_CHANGE_REQUIRED =
-      new IOException("max header table size change required");
+  private static final IOException INVALID_MAX_DYNAMIC_TABLE_SIZE =
+      new IOException("invalid max dynamic table size");
+  private static final IOException MAX_DYNAMIC_TABLE_SIZE_CHANGE_REQUIRED =
+      new IOException("max dynamic table size change required");
 
   private static final byte[] EMPTY = {};
 
-  private final HeaderTable headerTable;
+  private final DynamicTable dynamicTable;
 
   private int maxHeaderSize;
-  private int maxHeaderTableSize;
-  private int encoderMaxHeaderTableSize;
-  private boolean maxHeaderTableSizeChangeRequired;
+  private int maxDynamicTableSize;
+  private int encoderMaxDynamicTableSize;
+  private boolean maxDynamicTableSizeChangeRequired;
 
   private long headerSize;
   private State state;
@@ -55,7 +54,7 @@ public final class Decoder {
 
   private enum State {
     READ_HEADER_REPRESENTATION,
-    READ_MAX_HEADER_TABLE_SIZE,
+    READ_MAX_DYNAMIC_TABLE_SIZE,
     READ_INDEXED_HEADER,
     READ_INDEXED_HEADER_NAME,
     READ_LITERAL_HEADER_NAME_LENGTH_PREFIX,
@@ -69,11 +68,11 @@ public final class Decoder {
   }
 
   public Decoder(int maxHeaderSize, int maxHeaderTableSize) {
-    headerTable = new HeaderTable(maxHeaderTableSize);
+    dynamicTable = new DynamicTable(maxHeaderTableSize);
     this.maxHeaderSize = maxHeaderSize;
-    this.maxHeaderTableSize = maxHeaderTableSize;
-    encoderMaxHeaderTableSize = maxHeaderTableSize;
-    maxHeaderTableSizeChangeRequired = false;
+    maxDynamicTableSize = maxHeaderTableSize;
+    encoderMaxDynamicTableSize = maxHeaderTableSize;
+    maxDynamicTableSizeChangeRequired = false;
     reset();
   }
 
@@ -91,9 +90,9 @@ public final class Decoder {
       switch(state) {
       case READ_HEADER_REPRESENTATION:
         byte b = (byte) in.read();
-        if (maxHeaderTableSizeChangeRequired && (b & 0xE0) != 0x20) {
-          // Encoder MUST signal maximum header table size change
-          throw MAX_HEADER_TABLE_SIZE_CHANGE_REQUIRED;
+        if (maxDynamicTableSizeChangeRequired && (b & 0xE0) != 0x20) {
+          // Encoder MUST signal maximum dynamic table size change
+          throw MAX_DYNAMIC_TABLE_SIZE_CHANGE_REQUIRED;
         }
         if (b < 0) {
           // Indexed Header Field
@@ -119,13 +118,12 @@ public final class Decoder {
             state = State.READ_LITERAL_HEADER_VALUE_LENGTH_PREFIX;
           }
         } else if ((b & 0x20) == 0x20) {
-          // Header Table Size Change
+          // Dynamic Table Size Update
           index = b & 0x1F;
-          // Maximum Header Table Size Change
           if (index == 0x1F) {
-            state = State.READ_MAX_HEADER_TABLE_SIZE;
+            state = State.READ_MAX_DYNAMIC_TABLE_SIZE;
           } else {
-            setHeaderTableSize(index);
+            setDynamicTableSize(index);
             state = State.READ_HEADER_REPRESENTATION;
           }
         } else {
@@ -144,18 +142,18 @@ public final class Decoder {
         }
         break;
 
-      case READ_MAX_HEADER_TABLE_SIZE:
-        int headerTableSize = decodeULE128(in);
-        if (headerTableSize == -1) {
+      case READ_MAX_DYNAMIC_TABLE_SIZE:
+        int maxSize = decodeULE128(in);
+        if (maxSize == -1) {
           return;
         }
 
         // Check for numerical overflow
-        if (headerTableSize > Integer.MAX_VALUE - index) {
+        if (maxSize > Integer.MAX_VALUE - index) {
           throw DECOMPRESSION_EXCEPTION;
         }
 
-        setHeaderTableSize(index + headerTableSize);
+        setDynamicTableSize(index + maxSize);
         state = State.READ_HEADER_REPRESENTATION;
         break;
 
@@ -215,9 +213,9 @@ public final class Decoder {
               break;
             }
 
-            // Check name length against max header table size
-            if (nameLength + HEADER_ENTRY_OVERHEAD > headerTable.capacity()) {
-              headerTable.clear();
+            // Check name length against max dynamic table size
+            if (nameLength + HEADER_ENTRY_OVERHEAD > dynamicTable.capacity()) {
+              dynamicTable.clear();
               name = EMPTY;
               skipLength = nameLength;
               state = State.SKIP_LITERAL_HEADER_NAME;
@@ -251,9 +249,9 @@ public final class Decoder {
             break;
           }
 
-          // Check name length against max header table size
-          if (nameLength + HEADER_ENTRY_OVERHEAD > headerTable.capacity()) {
-            headerTable.clear();
+          // Check name length against max dynamic table size
+          if (nameLength + HEADER_ENTRY_OVERHEAD > dynamicTable.capacity()) {
+            dynamicTable.clear();
             name = EMPTY;
             skipLength = nameLength;
             state = State.SKIP_LITERAL_HEADER_NAME;
@@ -303,9 +301,9 @@ public final class Decoder {
               break;
             }
 
-            // Check new header size against max header table size
-            if (newHeaderSize + HEADER_ENTRY_OVERHEAD > headerTable.capacity()) {
-              headerTable.clear();
+            // Check new header size against max dynamic table size
+            if (newHeaderSize + HEADER_ENTRY_OVERHEAD > dynamicTable.capacity()) {
+              dynamicTable.clear();
               state = State.SKIP_LITERAL_HEADER_VALUE;
               break;
             }
@@ -346,9 +344,9 @@ public final class Decoder {
             break;
           }
 
-          // Check new header size against max header table size
-          if (newHeaderSize + HEADER_ENTRY_OVERHEAD > headerTable.capacity()) {
-            headerTable.clear();
+          // Check new header size against max dynamic table size
+          if (newHeaderSize + HEADER_ENTRY_OVERHEAD > dynamicTable.capacity()) {
+            dynamicTable.clear();
             state = State.SKIP_LITERAL_HEADER_VALUE;
             break;
           }
@@ -397,12 +395,12 @@ public final class Decoder {
    * the beginning of the next header block MUST signal this change.
    */
   public void setMaxHeaderTableSize(int maxHeaderTableSize) {
-    this.maxHeaderTableSize = maxHeaderTableSize;
-    if (maxHeaderTableSize < encoderMaxHeaderTableSize) {
+    this.maxDynamicTableSize = maxHeaderTableSize;
+    if (maxHeaderTableSize < encoderMaxDynamicTableSize) {
       // decoder requires less space than encoder
       // encoder MUST signal this change
-      maxHeaderTableSizeChangeRequired = true;
-      headerTable.setCapacity(maxHeaderTableSize);
+      maxDynamicTableSizeChangeRequired = true;
+      dynamicTable.setCapacity(maxHeaderTableSize);
     }
   }
 
@@ -411,7 +409,7 @@ public final class Decoder {
    * This is the maximum size allowed by both the encoder and the decoder.
    */
   public int getMaxHeaderTableSize() {
-    return headerTable.capacity();
+    return dynamicTable.capacity();
   }
 
   /**
@@ -419,7 +417,7 @@ public final class Decoder {
    * Exposed for testing.
    */
   int length() {
-    return headerTable.length();
+    return dynamicTable.length();
   }
 
   /**
@@ -427,7 +425,7 @@ public final class Decoder {
    * Exposed for testing.
    */
   int size() {
-    return headerTable.size();
+    return dynamicTable.size();
   }
 
   /**
@@ -435,24 +433,24 @@ public final class Decoder {
    * Exposed for testing.
    */
   HeaderField getHeaderField(int index) {
-    return headerTable.getEntry(index + 1);
+    return dynamicTable.getEntry(index + 1);
   }
 
-  private void setHeaderTableSize(int headerTableSize) throws IOException {
-    if (headerTableSize > maxHeaderTableSize) {
-      throw INVALID_MAX_HEADER_TABLE_SIZE;
+  private void setDynamicTableSize(int dynamicTableSize) throws IOException {
+    if (dynamicTableSize > maxDynamicTableSize) {
+      throw INVALID_MAX_DYNAMIC_TABLE_SIZE;
     }
-    encoderMaxHeaderTableSize = headerTableSize;
-    maxHeaderTableSizeChangeRequired = false;
-    headerTable.setCapacity(headerTableSize);
+    encoderMaxDynamicTableSize = dynamicTableSize;
+    maxDynamicTableSizeChangeRequired = false;
+    dynamicTable.setCapacity(dynamicTableSize);
   }
 
   private void readName(int index) throws IOException {
     if (index <= StaticTable.length) {
       HeaderField headerField = StaticTable.getEntry(index);
       name = headerField.name;
-    } else if (index - StaticTable.length <= headerTable.length()) {
-      HeaderField headerField = headerTable.getEntry(index - StaticTable.length);
+    } else if (index - StaticTable.length <= dynamicTable.length()) {
+      HeaderField headerField = dynamicTable.getEntry(index - StaticTable.length);
       name = headerField.name;
     } else {
       throw ILLEGAL_INDEX_VALUE;
@@ -463,8 +461,8 @@ public final class Decoder {
     if (index <= StaticTable.length) {
       HeaderField headerField = StaticTable.getEntry(index);
       addHeader(headerListener, headerField.name, headerField.value, false);
-    } else if (index - StaticTable.length <= headerTable.length()) {
-      HeaderField headerField = headerTable.getEntry(index - StaticTable.length);
+    } else if (index - StaticTable.length <= dynamicTable.length()) {
+      HeaderField headerField = dynamicTable.getEntry(index - StaticTable.length);
       addHeader(headerListener, headerField.name, headerField.value, false);
     } else {
       throw ILLEGAL_INDEX_VALUE;
@@ -480,7 +478,7 @@ public final class Decoder {
         break;
 
       case INCREMENTAL:
-        headerTable.add(new HeaderField(name, value));
+        dynamicTable.add(new HeaderField(name, value));
         break;
 
       default:
