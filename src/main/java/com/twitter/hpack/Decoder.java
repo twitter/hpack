@@ -91,7 +91,7 @@ public final class Decoder {
       switch(state) {
       case READ_HEADER_REPRESENTATION:
         byte b = (byte) in.read();
-        if (maxHeaderTableSizeChangeRequired && (b & 0xF0) != 0x20) {
+        if (maxHeaderTableSizeChangeRequired && (b & 0xE0) != 0x20) {
           // Encoder MUST signal maximum header table size change
           throw MAX_HEADER_TABLE_SIZE_CHANGE_REQUIRED;
         }

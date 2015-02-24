@@ -139,6 +139,7 @@ class HeaderTable {
     if (this.capacity == capacity) {
       return;
     }
+    this.capacity = capacity;
 
     // initially size will be 0 so remove won't be called
     if (capacity == 0) {
@@ -174,7 +175,6 @@ class HeaderTable {
 
     this.tail = 0;
     this.head = tail + len;
-    this.capacity = capacity;
     this.headerTable = tmp;
   }
 }

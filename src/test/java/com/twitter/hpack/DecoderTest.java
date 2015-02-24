@@ -95,6 +95,13 @@ public class DecoderTest {
     assertEquals(4096, decoder.getMaxHeaderTableSize());
   }
 
+  @Test
+  public void testHeaderTableSizeUpdateRequired() throws Exception {
+    decoder.setMaxHeaderTableSize(32);
+    decode("3F00");
+    assertEquals(31, decoder.getMaxHeaderTableSize());
+  }
+
   @Test(expected = IOException.class)
   public void testIllegalHeaderTableSizeUpdate() throws Exception {
     // max header table size = MAX_HEADER_TABLE_SIZE + 1
