@@ -88,7 +88,7 @@ public class DecoderTest {
   }
 
   @Test
-  public void testHeaderTableSizeUpdate() throws Exception {
+  public void testDynamicTableSizeUpdate() throws Exception {
     decode("20");
     assertEquals(0, decoder.getMaxHeaderTableSize());
     decode("3FE11F");
@@ -96,40 +96,40 @@ public class DecoderTest {
   }
 
   @Test
-  public void testHeaderTableSizeUpdateRequired() throws Exception {
+  public void testDynamicTableSizeUpdateRequired() throws Exception {
     decoder.setMaxHeaderTableSize(32);
     decode("3F00");
     assertEquals(31, decoder.getMaxHeaderTableSize());
   }
 
   @Test(expected = IOException.class)
-  public void testIllegalHeaderTableSizeUpdate() throws Exception {
+  public void testIllegalDynamicTableSizeUpdate() throws Exception {
     // max header table size = MAX_HEADER_TABLE_SIZE + 1
     decode("3FE21F");
   }
 
   @Test(expected = IOException.class)
-  public void testInsidiousMaxHeaderTableSize() throws IOException {
+  public void testInsidiousMaxDynamicTableSize() throws IOException {
     // max header table size sign overflow
     decode("3FE1FFFFFF07");
   }
 
   @Test
-  public void testReduceMaxHeaderTableSize() throws Exception {
+  public void testReduceMaxDynamicTableSize() throws Exception {
     decoder.setMaxHeaderTableSize(0);
     assertEquals(0, decoder.getMaxHeaderTableSize());
     decode("2081");
   }
 
   @Test(expected = IOException.class)
-  public void testTooLargeHeaderTableSizeUpdate() throws Exception {
+  public void testTooLargeDynamicTableSizeUpdate() throws Exception {
     decoder.setMaxHeaderTableSize(0);
     assertEquals(0, decoder.getMaxHeaderTableSize());
     decode("21"); // encoder max header table size not small enough
   }
 
   @Test(expected = IOException.class)
-  public void testMissingHeaderTableSizeUpdate() throws Exception {
+  public void testMissingDynamicTableSizeUpdate() throws Exception {
     decoder.setMaxHeaderTableSize(0);
     assertEquals(0, decoder.getMaxHeaderTableSize());
     decode("81");

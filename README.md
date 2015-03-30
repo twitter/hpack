@@ -17,7 +17,7 @@ HPACK can be downloaded from the Maven central repository. Add the following dep
 
 ## Getting Started
 
-This library provides support for compression of header sets into header blocks. The following code fragment demonstrates the use of Encoder and Decoder:
+This library provides support for compression of header lists into header blocks. The following code fragment demonstrates the use of Encoder and Decoder:
 
     try {
       int maxHeaderSize = 4096;
@@ -28,7 +28,7 @@ This library provides support for compression of header sets into header blocks.
 
       ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-      // encode header set into header block
+      // encode header list into header block
       Encoder encoder = new Encoder(maxHeaderTableSize);
       encoder.encodeHeader(out, name, value, sensitive);
 
@@ -41,7 +41,7 @@ This library provides support for compression of header sets into header blocks.
         }
       };
 
-      // decode header block into header set
+      // decode header list from header block
       Decoder decoder = new Decoder(maxHeaderSize, maxHeaderTableSize);
       decoder.decode(in, listener);
       decoder.endHeaderBlock();

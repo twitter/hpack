@@ -44,11 +44,11 @@ final class HpackUtil {
     return obj;
   }
 
-  // 6.2 Literal Header Field Representation
+  // Section 6.2. Literal Header Field Representation
   enum IndexType {
-    INCREMENTAL, // 6.2.1. Literal Header Field with Incremental Indexing
-    NONE,        // 6.2.2. Literal Header Field without Indexing
-    NEVER        // 6.2.3. Literal Header Field never Indexed
+    INCREMENTAL, // Section 6.2.1. Literal Header Field with Incremental Indexing
+    NONE,        // Section 6.2.2. Literal Header Field without Indexing
+    NEVER        // Section 6.2.3. Literal Header Field never Indexed
   }
 
   // Appendix B: Huffman Codes

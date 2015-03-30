@@ -79,11 +79,11 @@ final class DynamicTable {
   }
 
   /**
-   * Add the header field to the header table.
-   * Entries are evicted from the header table until the size of the table
+   * Add the header field to the dynamic table.
+   * Entries are evicted from the dynamic table until the size of the table
    * and the new header field is less than or equal to the table's capacity.
    * If the size of the new entry is larger than the table's capacity,
-   * the header table will be cleared.
+   * the dynamic table will be cleared.
    */
   public void add(HeaderField header) {
     int headerSize = header.size();
@@ -100,7 +100,6 @@ final class DynamicTable {
       head = 0;
     }
   }
-
 
   /**
    * Remove and return the oldest header field from the dynamic table.
@@ -135,7 +134,7 @@ final class DynamicTable {
 
   /**
    * Set the maximum size of the dynamic table.
-   * Entries are evicted from the header table until the size of the table
+   * Entries are evicted from the dynamic table until the size of the table
    * is less than or equal to the maximum size.
    */
   public void setCapacity(int capacity) {
@@ -149,10 +148,10 @@ final class DynamicTable {
     }
     this.capacity = capacity;
 
-    // initially size will be 0 so remove won't be called
     if (capacity == 0) {
       clear();
     } else {
+      // initially size will be 0 so remove won't be called
       while (size > capacity) {
         remove();
       }

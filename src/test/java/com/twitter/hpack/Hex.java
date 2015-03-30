@@ -23,7 +23,7 @@ import java.io.IOException;
  * Extracted from org/apache/commons/codec/binary/Hex.java
  * Copyright Apache Software Foundation
  */
-public class Hex {
+final class Hex {
 
   /**
    * Used to build output as Hex

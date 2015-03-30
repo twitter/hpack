@@ -28,7 +28,7 @@ final class HuffmanEncoder {
    * @param codes   the Huffman codes indexed by symbol
    * @param lengths the length of each Huffman code
    */
-  public HuffmanEncoder(int[] codes, byte[] lengths) {
+  HuffmanEncoder(int[] codes, byte[] lengths) {
     this.codes = codes;
     this.lengths = lengths;
   }

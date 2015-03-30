@@ -20,8 +20,9 @@ import static com.twitter.hpack.HpackUtil.requireNonNull;
 
 class HeaderField implements Comparable<HeaderField> {
 
-  // Section 3.3.1: Maximum Table Size
-  // The 32 octets are an accounting for the entry structure overhead.
+  // Section 4.1. Calculating Table Size
+  // The additional 32 octets account for an estimated
+  // overhead associated with the structure.
   static final int HEADER_ENTRY_OVERHEAD = 32;
 
   static int sizeOf(byte[] name, byte[] value) {

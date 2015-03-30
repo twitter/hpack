@@ -67,6 +67,9 @@ public final class Decoder {
     SKIP_LITERAL_HEADER_VALUE
   }
 
+  /**
+   * Creates a new decoder.
+   */
   public Decoder(int maxHeaderSize, int maxHeaderTableSize) {
     dynamicTable = new DynamicTable(maxHeaderTableSize);
     this.maxHeaderSize = maxHeaderSize;
@@ -390,22 +393,22 @@ public final class Decoder {
   }
 
   /**
-   * Set the maximum header table size.
-   * If this is below the maximum size of the header table used by the encoder,
+   * Set the maximum table size.
+   * If this is below the maximum size of the dynamic table used by the encoder,
    * the beginning of the next header block MUST signal this change.
    */
   public void setMaxHeaderTableSize(int maxHeaderTableSize) {
-    this.maxDynamicTableSize = maxHeaderTableSize;
-    if (maxHeaderTableSize < encoderMaxDynamicTableSize) {
+    maxDynamicTableSize = maxHeaderTableSize;
+    if (maxDynamicTableSize < encoderMaxDynamicTableSize) {
       // decoder requires less space than encoder
       // encoder MUST signal this change
       maxDynamicTableSizeChangeRequired = true;
-      dynamicTable.setCapacity(maxHeaderTableSize);
+      dynamicTable.setCapacity(maxDynamicTableSize);
     }
   }
 
   /**
-   * Return the maximum header table size.
+   * Return the maximum table size.
    * This is the maximum size allowed by both the encoder and the decoder.
    */
   public int getMaxHeaderTableSize() {
@@ -413,7 +416,7 @@ public final class Decoder {
   }
 
   /**
-   * Return the number of header fields in the header table.
+   * Return the number of header fields in the dynamic table.
    * Exposed for testing.
    */
   int length() {
@@ -421,7 +424,7 @@ public final class Decoder {
   }
 
   /**
-   * Return the size of the header table.
+   * Return the size of the dynamic table.
    * Exposed for testing.
    */
   int size() {

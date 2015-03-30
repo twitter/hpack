@@ -26,7 +26,7 @@ public final class Encoder {
   private static final int BUCKET_SIZE = 17;
   private static final byte[] EMPTY = {};
 
-  // For testing
+  // for testing
   private final boolean useIndexing;
   private final boolean forceHuffmanOn;
   private final boolean forceHuffmanOff;
@@ -37,6 +37,9 @@ public final class Encoder {
   private int size;
   private int capacity;
 
+  /**
+   * Creates a new encoder.
+   */
   public Encoder(int maxHeaderTableSize) {
     this(maxHeaderTableSize, true, false, false);
   }
@@ -51,7 +54,7 @@ public final class Encoder {
       boolean forceHuffmanOff
   ) {
     if (maxHeaderTableSize < 0) {
-      throw new IllegalArgumentException("Illegal Capacity: "+ maxHeaderTableSize);
+      throw new IllegalArgumentException("Illegal Capacity: " + maxHeaderTableSize);
     }
     this.useIndexing = useIndexing;
     this.forceHuffmanOn = forceHuffmanOn;
@@ -96,12 +99,12 @@ public final class Encoder {
     HeaderEntry headerField = getEntry(name, value);
     if (headerField != null) {
       int index = getIndex(headerField.index) + StaticTable.length;
-      // Section 4.2 - Indexed Header Field
+      // Section 6.1. Indexed Header Field Representation
       encodeInteger(out, 0x80, 7, index);
     } else {
       int staticTableIndex = StaticTable.getIndex(name, value);
       if (staticTableIndex != -1) {
-        // Section 4.2 - Indexed Header Field
+        // Section 6.1. Indexed Header Field Representation
         encodeInteger(out, 0x80, 7, staticTableIndex);
       } else {
         int nameIndex = getNameIndex(name);
@@ -118,36 +121,35 @@ public final class Encoder {
   }
 
   /**
-   * Set the maximum header table size.
+   * Set the maximum table size.
    */
   public void setMaxHeaderTableSize(OutputStream out, int maxHeaderTableSize) throws IOException {
     if (maxHeaderTableSize < 0) {
-      throw new IllegalArgumentException("Illegal Capacity: "+ maxHeaderTableSize);
+      throw new IllegalArgumentException("Illegal Capacity: " + maxHeaderTableSize);
     }
-    this.capacity = maxHeaderTableSize;
+    if (capacity == maxHeaderTableSize) {
+      return;
+    }
+    capacity = maxHeaderTableSize;
     ensureCapacity(0);
     encodeInteger(out, 0x20, 5, maxHeaderTableSize);
   }
 
   /**
-   * Return the maximum header table size.
+   * Return the maximum table size.
    */
   public int getMaxHeaderTableSize() {
     return capacity;
   }
 
   /**
-   * @param mask  A mask to be applied to the first byte
-   * @param n     The number of prefix bits
-   * @param i     The value to encode
+   * Encode integer according to Section 5.1.
    */
   private static void encodeInteger(OutputStream out, int mask, int n, int i) throws IOException {
     if (n < 0 || n > 8) {
       throw new IllegalArgumentException("N: " + n);
     }
-
     int nbits = 0xFF >>> (8 - n);
-
     if (i < nbits) {
       out.write(mask | i);
     } else {
@@ -166,13 +168,24 @@ public final class Encoder {
   }
 
   /**
-   * 4.3.1. Literal Header Field with Incremental Indexing
-   * 4.3.2. Literal Header Field without Indexing
-   * 4.3.3. Literal Header Field never Indexed
+   * Encode string literal according to Section 5.2.
+   */
+  private void encodeStringLiteral(OutputStream out, byte[] string) throws IOException {
+    int huffmanLength = Huffman.ENCODER.getEncodedLength(string);
+    if ((huffmanLength < string.length && !forceHuffmanOff) || forceHuffmanOn) {
+      encodeInteger(out, 0x80, 7, huffmanLength);
+      Huffman.ENCODER.encode(out, string);
+    } else {
+      encodeInteger(out, 0x00, 7, string.length);
+      out.write(string, 0, string.length);
+    }
+  }
+
+  /**
+   * Encode literal header field according to Section 6.2.
    */
   private void encodeLiteral(OutputStream out, byte[] name, byte[] value, IndexType indexType, int nameIndex)
       throws IOException {
-
     int mask;
     int prefixBits;
     switch(indexType) {
@@ -192,30 +205,10 @@ public final class Encoder {
       throw new IllegalStateException("should not reach here");
     }
     encodeInteger(out, mask, prefixBits, nameIndex == -1 ? 0 : nameIndex);
-
     if (nameIndex == -1) {
       encodeStringLiteral(out, name);
     }
-
     encodeStringLiteral(out, value);
-  }
-
-  /**
-   * Encode string literal according to 4.1.2.
-   *
-   * @param out The out to encode into
-   * @param string The string to encode
-   */
-  private void encodeStringLiteral(OutputStream out, byte[] string) throws IOException {
-    int huffmanLength = Huffman.ENCODER.getEncodedLength(string);
-
-    if ((huffmanLength < string.length && !forceHuffmanOff) || forceHuffmanOn) {
-      encodeInteger(out, 0x80, 7, huffmanLength);
-      Huffman.ENCODER.encode(out, string);
-    } else {
-      encodeInteger(out, 0x00, 7, string.length);
-      out.write(string, 0, string.length);
-    }
   }
 
   private int getNameIndex(byte[] name) {
@@ -230,8 +223,8 @@ public final class Encoder {
   }
 
   /**
-   * Ensure that the header table has enough room to hold 'headerSize' more bytes.
-   * Removes the oldest entry from the header table until sufficient space is available.
+   * Ensure that the dynamic table has enough room to hold 'headerSize' more bytes.
+   * Removes the oldest entry from the dynamic table until sufficient space is available.
    */
   private void ensureCapacity(int headerSize) throws IOException {
     while (size + headerSize > capacity) {
@@ -244,7 +237,7 @@ public final class Encoder {
   }
 
   /**
-   * Return the number of header fields in the header table.
+   * Return the number of header fields in the dynamic table.
    * Exposed for testing.
    */
   int length() {
@@ -252,7 +245,7 @@ public final class Encoder {
   }
 
   /**
-   * Return the size of the header table.
+   * Return the size of the dynamic table.
    * Exposed for testing.
    */
   int size() {
@@ -273,7 +266,7 @@ public final class Encoder {
 
   /**
    * Returns the header entry with the lowest index value for the header field.
-   * Returns null if header field is not in the header table.
+   * Returns null if header field is not in the dynamic table.
    */
   private HeaderEntry getEntry(byte[] name, byte[] value) {
     if (length() == 0 || name == null || value == null) {
@@ -292,8 +285,8 @@ public final class Encoder {
   }
 
   /**
-   * Returns the lowest index value for the header field name in the header table.
-   * Returns -1 if the header field name is not in the header table.
+   * Returns the lowest index value for the header field name in the dynamic table.
+   * Returns -1 if the header field name is not in the dynamic table.
    */
   private int getIndex(byte[] name) {
     if (length() == 0 || name == null) {
@@ -312,7 +305,7 @@ public final class Encoder {
   }
 
   /**
-   * Compute the index into the header table given the index in the header entry.
+   * Compute the index into the dynamic table given the index in the header entry.
    */
   private int getIndex(int index) {
     if (index == -1) {
@@ -322,11 +315,11 @@ public final class Encoder {
   }
 
   /**
-   * Add the header field to the header table.
-   * Entries are evicted from the header table until the size of the table
+   * Add the header field to the dynamic table.
+   * Entries are evicted from the dynamic table until the size of the table
    * and the new header field is less than the table's capacity.
    * If the size of the new entry is larger than the table's capacity,
-   * the header table will be cleared.
+   * the dynamic table will be cleared.
    */
   private void add(byte[] name, byte[] value) {
     int headerSize = HeaderField.sizeOf(name, value);
@@ -342,7 +335,7 @@ public final class Encoder {
       remove();
     }
 
-    // Copy name and value that modifications of original do not affect the header table.
+    // Copy name and value that modifications of original do not affect the dynamic table.
     name = Arrays.copyOf(name, name.length);
     value = Arrays.copyOf(value, value.length);
 
@@ -356,7 +349,7 @@ public final class Encoder {
   }
 
   /**
-   * Remove and return the oldest header field from the header table.
+   * Remove and return the oldest header field from the dynamic table.
    */
   private HeaderField remove() {
     if (size == 0) {
@@ -386,7 +379,7 @@ public final class Encoder {
   }
 
   /**
-   * Remove all entries from the header table.
+   * Remove all entries from the dynamic table.
    */
   private void clear() {
     Arrays.fill(headerFields, null);
@@ -429,7 +422,7 @@ public final class Encoder {
     HeaderEntry next;
     int hash;
 
-    // This is used to compute the index in the header table.
+    // This is used to compute the index in the dynamic table.
     int index;
 
     /**
