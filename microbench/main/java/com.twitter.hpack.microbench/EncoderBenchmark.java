@@ -46,6 +46,9 @@ public class EncoderBenchmark extends AbstractMicrobenchmarkBase {
     @Param
     public HeadersSize size;
 
+    @Param({"true", "false"})
+    public boolean duplicates;
+
     private List<Header> headers;
 
     @Setup(Level.Trial)
@@ -72,7 +75,8 @@ public class EncoderBenchmark extends AbstractMicrobenchmarkBase {
         Encoder encoder = new Encoder(maxTableSize);
         OutputStream outputStream = new ByteArrayOutputStream(1048576);
         for (int i = 0; i < headers.size(); ++i) {
-            Header header = headers.get(i);
+            // If duplicates is set, re-add the same header each time.
+            Header header = duplicates ? headers.get(0) : headers.get(i);
             encoder.encodeHeader(outputStream, header.name, header.value, sensitive);
         }
     }

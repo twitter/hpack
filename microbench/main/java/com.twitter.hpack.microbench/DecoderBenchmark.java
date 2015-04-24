@@ -84,6 +84,7 @@ public class DecoderBenchmark extends AbstractMicrobenchmarkBase {
                 bh.consume(sensitive);
             }
         });
+        decoder.endHeaderBlock();
     }
 
     private static byte[] getSerializedHeaders(List<Header> headers, boolean sensitive) throws IOException {
