@@ -2,10 +2,11 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.twitter</groupId>
-    <artifactId>hpack</artifactId>
+    <artifactId>hpack-parent</artifactId>
     <version>0.10.2-SNAPSHOT</version>
+    <packaging>pom</packaging>
 
-    <name>HPACK</name>
+    <name>HPACK/Parent</name>
     <url>http://github.com/twitter/hpack</url>
     <description>Header Compression for HTTP/2</description>
 
@@ -53,27 +54,6 @@
         </repository>
     </distributionManagement>
 
-    <dependencies>
-        <!-- Test Deps -->
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>2.2.4</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.11</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <version>1.9.5</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
 
     <repositories>
         <repository>
@@ -87,6 +67,40 @@
             </snapshots>
         </repository>
     </repositories>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.google.code.gson</groupId>
+                <artifactId>gson</artifactId>
+                <version>2.2.4</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>4.11</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-core</artifactId>
+                <version>1.9.5</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.openjdk.jmh</groupId>
+                <artifactId>jmh-core</artifactId>
+                <version>1.7.1</version>
+            </dependency>
+            <dependency>
+                <groupId>org.openjdk.jmh</groupId>
+                <artifactId>jmh-generator-annprocess</artifactId>
+                <version>1.7.1</version>
+                <scope>provided</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <pluginManagement>
@@ -193,4 +207,9 @@
             </build>
         </profile>
     </profiles>
+
+    <modules>
+        <module>hpack</module>
+        <module>microbench</module>
+    </modules>
 </project>
