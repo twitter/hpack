@@ -26,11 +26,11 @@ import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.infra.Blackhole;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 
 @State(Scope.Benchmark)
@@ -74,12 +74,14 @@ public class DecoderBenchmark extends AbstractMicrobenchmarkBase {
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    public void decode() throws IOException {
+    public void decode(final Blackhole bh) throws IOException {
         Decoder decoder = new Decoder(maxHeaderSize, maxTableSize);
         decoder.decode(new ByteArrayInputStream(input), new HeaderListener() {
             @Override
             public void addHeader(byte[] name, byte[] value, boolean sensitive) {
-                // Do nothing.
+                bh.consume(name);
+                bh.consume(value);
+                bh.consume(sensitive);
             }
         });
     }
