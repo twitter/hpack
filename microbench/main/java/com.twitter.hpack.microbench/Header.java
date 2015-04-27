@@ -23,6 +23,8 @@ import java.util.Random;
  * Helper class representing a single header entry. Used by the benchmarks.
  */
 class Header {
+    private static final String ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_";
+
     final byte[] name;
     final byte[] value;
 
@@ -34,16 +36,27 @@ class Header {
     /**
      * Creates a number of random headers with the given name/value lengths.
      */
-    static List<Header> createHeaders(int numHeaders, int nameLength, int valueLength) {
+    static List<Header> createHeaders(int numHeaders, int nameLength, int valueLength, boolean limitToAscii) {
         List<Header> headers = new ArrayList<Header>(numHeaders);
         Random r = new Random();
         for (int i = 0; i < numHeaders; ++i) {
-            byte[] name = new byte[nameLength];
-            r.nextBytes(name);
-            byte[] value = new byte[valueLength];
-            r.nextBytes(value);
+            byte[] name = randomBytes(new byte[nameLength], limitToAscii);
+            byte[] value = randomBytes(new byte[valueLength], limitToAscii);
             headers.add(new Header(name, value));
         }
         return headers;
+    }
+
+    private static byte[] randomBytes(byte[] bytes, boolean limitToAscii) {
+        Random r = new Random();
+        if (limitToAscii) {
+            for (int index=0; index < bytes.length; ++index) {
+                int charIndex = r.nextInt(ALPHABET.length());
+                bytes[index] = (byte) ALPHABET.charAt(charIndex);
+            }
+        } else {
+            r.nextBytes(bytes);
+        }
+        return bytes;
     }
 }

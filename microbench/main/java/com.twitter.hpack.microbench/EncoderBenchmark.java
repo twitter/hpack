@@ -21,21 +21,17 @@ import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Param;
-import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
-import org.openjdk.jmh.annotations.State;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
 
-@State(Scope.Benchmark)
 public class EncoderBenchmark extends AbstractMicrobenchmarkBase {
 
-    public enum HeadersSize {
-        SMALL, MEDIUM, LARGE, JUMBO
-    }
+    @Param
+    public HeadersSize size;
 
     @Param ({"4096"})
     public int maxTableSize;
@@ -43,30 +39,17 @@ public class EncoderBenchmark extends AbstractMicrobenchmarkBase {
     @Param({"true", "false"})
     public boolean sensitive;
 
-    @Param
-    public HeadersSize size;
-
     @Param({"true", "false"})
     public boolean duplicates;
+
+    @Param({"true", "false"})
+    public boolean limitToAscii;
 
     private List<Header> headers;
 
     @Setup(Level.Trial)
     public void setup() {
-        switch (size) {
-            case SMALL:
-                headers = Header.createHeaders(5, 20, 20);
-                break;
-            case MEDIUM:
-                headers = Header.createHeaders(20, 40, 40);
-                break;
-            case LARGE:
-                headers = Header.createHeaders(100, 100, 100);
-                break;
-            case JUMBO:
-                headers = Header.createHeaders(300, 300, 300);
-                break;
-        }
+        headers = headers(size, limitToAscii);
     }
 
     @Benchmark

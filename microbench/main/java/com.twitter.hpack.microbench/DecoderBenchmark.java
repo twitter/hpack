@@ -23,9 +23,7 @@ import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Param;
-import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
-import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.infra.Blackhole;
 
 import java.io.ByteArrayInputStream;
@@ -33,12 +31,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
 
-@State(Scope.Benchmark)
 public class DecoderBenchmark extends AbstractMicrobenchmarkBase {
 
-    public enum HeadersSize {
-        SMALL, MEDIUM, LARGE, JUMBO
-    }
+    @Param
+    public HeadersSize size;
 
     @Param ({"4096"})
     public int maxTableSize;
@@ -49,27 +45,14 @@ public class DecoderBenchmark extends AbstractMicrobenchmarkBase {
     @Param({"true", "false"})
     public boolean sensitive;
 
-    @Param
-    public HeadersSize size;
+    @Param({"true", "false"})
+    public boolean limitToAscii;
 
     private byte[] input;
 
     @Setup(Level.Trial)
     public void setup() throws IOException {
-        switch (size) {
-            case SMALL:
-                input = getSerializedHeaders(Header.createHeaders(5, 20, 20), sensitive);
-                break;
-            case MEDIUM:
-                input = getSerializedHeaders(Header.createHeaders(20, 40, 40), sensitive);
-                break;
-            case LARGE:
-                input = getSerializedHeaders(Header.createHeaders(100, 100, 100), sensitive);
-                break;
-            case JUMBO:
-                input = getSerializedHeaders(Header.createHeaders(300, 300, 300), sensitive);
-                break;
-        }
+        input = getSerializedHeaders(headers(size, limitToAscii), sensitive);
     }
 
     @Benchmark

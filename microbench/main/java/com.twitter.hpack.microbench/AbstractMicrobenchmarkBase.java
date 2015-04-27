@@ -15,7 +15,10 @@
  */
 package com.twitter.hpack.microbench;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
+import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
@@ -26,6 +29,9 @@ import org.openjdk.jmh.runner.options.ChainedOptionsBuilder;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 /**
@@ -33,16 +39,96 @@ import java.util.logging.Logger;
  */
 @Warmup(iterations = AbstractMicrobenchmarkBase.DEFAULT_WARMUP_ITERATIONS)
 @Measurement(iterations = AbstractMicrobenchmarkBase.DEFAULT_MEASURE_ITERATIONS)
-@State(Scope.Thread)
+@Fork(value = AbstractMicrobenchmarkBase.DEFAULT_FORKS)
+@State(Scope.Benchmark)
 public abstract class AbstractMicrobenchmarkBase {
     private static final Logger logger = Logger.getLogger(AbstractMicrobenchmarkBase.class.getName());
 
-    protected static final int DEFAULT_WARMUP_ITERATIONS = 10;
-    protected static final int DEFAULT_MEASURE_ITERATIONS = 10;
+    protected static final int DEFAULT_WARMUP_ITERATIONS = 5;
+    protected static final int DEFAULT_MEASURE_ITERATIONS = 5;
+    protected static final int DEFAULT_FORKS = 1;
     protected static final String[] JVM_ARGS = {
             "-server", "-dsa", "-da", "-XX:+AggressiveOpts", "-XX:+UseBiasedLocking",
             "-XX:+UseFastAccessorMethods", "-XX:+OptimizeStringConcat",
             "-XX:+HeapDumpOnOutOfMemoryError"};
+
+    /**
+     * Enum that indicates the size of the headers to be used for the benchmark.
+     */
+    public enum HeadersSize {
+        SMALL(5, 20, 40),
+        MEDIUM(20, 40, 80),
+        LARGE(100, 100, 300);
+
+        final int numHeaders;
+        final int nameLength;
+        final int valueLength;
+
+        private HeadersSize(int numHeaders, int nameLength, int valueLength) {
+            this.numHeaders = numHeaders;
+            this.nameLength = nameLength;
+            this.valueLength = valueLength;
+        }
+
+        List<Header> newHeaders(boolean limitAscii) {
+            return Header.createHeaders(numHeaders, nameLength, valueLength, limitAscii);
+        }
+    }
+
+    /**
+     * Internal key used to index a particular set of headers in the map.
+     */
+    private static class HeadersKey {
+        final HeadersSize size;
+        final boolean limitToAscii;
+
+        public HeadersKey(HeadersSize size, boolean limitToAscii) {
+            this.size = size;
+            this.limitToAscii = limitToAscii;
+        }
+
+        List<Header> newHeaders() {
+            return size.newHeaders(limitToAscii);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            HeadersKey that = (HeadersKey) o;
+
+            if (limitToAscii != that.limitToAscii) return false;
+            return size == that.size;
+
+        }
+
+        @Override
+        public int hashCode() {
+            int result = size.hashCode();
+            result = 31 * result + (limitToAscii ? 1 : 0);
+            return result;
+        }
+    }
+
+    private static final Map<HeadersKey, List<Header>> headersMap;
+    static {
+        headersMap = new HashMap<HeadersKey, List<Header>>();
+        for (HeadersSize size : HeadersSize.values()) {
+            HeadersKey key = new HeadersKey(size, true);
+            headersMap.put(key, key.newHeaders());
+
+            key = new HeadersKey(size, false);
+            headersMap.put(key, key.newHeaders());
+        }
+    }
+
+    /**
+     * Gets headers for the given size and whether the key/values should be limited to ASCII.
+     */
+    protected static List<Header> headers(HeadersSize size, boolean limitToAscii) {
+        return headersMap.get(new HeadersKey(size, limitToAscii));
+    }
 
     protected ChainedOptionsBuilder newOptionsBuilder() throws Exception {
         String className = getClass().getSimpleName();
@@ -57,6 +143,10 @@ public abstract class AbstractMicrobenchmarkBase {
 
         if (getMeasureIterations() > 0) {
             runnerOptions.measurementIterations(getMeasureIterations());
+        }
+
+        if (getForks() > 0) {
+            runnerOptions.forks(getForks());
         }
 
         if (getReportDir() != null) {
@@ -85,15 +175,19 @@ public abstract class AbstractMicrobenchmarkBase {
         new Runner(newOptionsBuilder().build()).run();
     }
 
-    protected int getWarmupIterations() {
+    private int getWarmupIterations() {
         return getIntProperty("warmupIterations", -1);
     }
 
-    protected int getMeasureIterations() {
+    private int getMeasureIterations() {
         return getIntProperty("measureIterations", -1);
     }
 
-    protected String getReportDir() {
+    private int getForks() {
+        return getIntProperty("forks", -1);
+    }
+
+    private String getReportDir() {
         return System.getProperty("perfReportDir");
     }
 
