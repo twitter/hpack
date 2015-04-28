@@ -58,10 +58,17 @@ public class EncoderBenchmark extends AbstractMicrobenchmarkBase {
     public void encode(Blackhole bh) throws IOException {
         Encoder encoder = new Encoder(maxTableSize);
         OutputStream outputStream = new ByteArrayOutputStream(1048576);
-        for (int i = 0; i < headers.size(); ++i) {
+        if (duplicates) {
             // If duplicates is set, re-add the same header each time.
-            Header header = duplicates ? headers.get(0) : headers.get(i);
-            encoder.encodeHeader(outputStream, header.name, header.value, sensitive);
+            Header header = headers.get(0);
+            for (int i = 0; i < headers.size(); ++i) {
+                encoder.encodeHeader(outputStream, header.name, header.value, sensitive);
+            }
+        } else {
+            for (int i = 0; i < headers.size(); ++i) {
+                Header header = headers.get(i);
+                encoder.encodeHeader(outputStream, header.name, header.value, sensitive);
+            }
         }
         bh.consume(outputStream);
     }

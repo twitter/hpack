@@ -113,8 +113,9 @@ public abstract class AbstractMicrobenchmarkBase {
 
     private static final Map<HeadersKey, List<Header>> headersMap;
     static {
-        headersMap = new HashMap<HeadersKey, List<Header>>();
-        for (HeadersSize size : HeadersSize.values()) {
+        HeadersSize[] sizes = HeadersSize.values();
+        headersMap = new HashMap<HeadersKey, List<Header>>(sizes.length * 2);
+        for (HeadersSize size : sizes) {
             HeadersKey key = new HeadersKey(size, true);
             headersMap.put(key, key.newHeaders());
 
