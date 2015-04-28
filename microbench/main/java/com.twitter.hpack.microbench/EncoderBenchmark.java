@@ -22,6 +22,7 @@ import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Setup;
+import org.openjdk.jmh.infra.Blackhole;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -54,7 +55,7 @@ public class EncoderBenchmark extends AbstractMicrobenchmarkBase {
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    public void encode() throws IOException {
+    public void encode(Blackhole bh) throws IOException {
         Encoder encoder = new Encoder(maxTableSize);
         OutputStream outputStream = new ByteArrayOutputStream(1048576);
         for (int i = 0; i < headers.size(); ++i) {
@@ -62,5 +63,6 @@ public class EncoderBenchmark extends AbstractMicrobenchmarkBase {
             Header header = duplicates ? headers.get(0) : headers.get(i);
             encoder.encodeHeader(outputStream, header.name, header.value, sensitive);
         }
+        bh.consume(outputStream);
     }
 }

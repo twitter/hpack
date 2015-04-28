@@ -62,8 +62,6 @@ public class DecoderBenchmark extends AbstractMicrobenchmarkBase {
         decoder.decode(new ByteArrayInputStream(input), new HeaderListener() {
             @Override
             public void addHeader(byte[] name, byte[] value, boolean sensitive) {
-                bh.consume(name);
-                bh.consume(value);
                 bh.consume(sensitive);
             }
         });
