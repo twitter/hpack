@@ -15,7 +15,7 @@
  */
 package com.twitter.hpack.microbench;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
 import java.util.List;
 
 /**
@@ -26,9 +26,9 @@ public enum HeadersSize {
     MEDIUM(20, 40, 80),
     LARGE(100, 100, 300);
 
-    final int numHeaders;
-    final int nameLength;
-    final int valueLength;
+    private final int numHeaders;
+    private final int nameLength;
+    private final int valueLength;
 
     HeadersSize(int numHeaders, int nameLength, int valueLength) {
         this.numHeaders = numHeaders;
@@ -36,11 +36,11 @@ public enum HeadersSize {
         this.valueLength = valueLength;
     }
 
-    List<Header> newHeaders(boolean limitAscii) {
+    public List<Header> newHeaders(boolean limitAscii) {
         return Header.createHeaders(numHeaders, nameLength, valueLength, limitAscii);
     }
 
-    ByteArrayOutputStream newOutputStream() {
+    public ByteArrayOutputStream newOutputStream() {
         return new ByteArrayOutputStream(numHeaders * (nameLength + valueLength));
     }
 }
