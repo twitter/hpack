@@ -68,9 +68,10 @@ public class DecoderBenchmark extends AbstractMicrobenchmarkBase {
         decoder.endHeaderBlock();
     }
 
-    private static byte[] getSerializedHeaders(List<Header> headers, boolean sensitive) throws IOException {
+    private byte[] getSerializedHeaders(List<Header> headers, boolean sensitive) throws IOException {
         Encoder encoder = new Encoder(4096);
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream(1048576);
+
+        ByteArrayOutputStream outputStream = size.newOutputStream();
         for (int i = 0; i < headers.size(); ++i) {
             Header header = headers.get(i);
             encoder.encodeHeader(outputStream, header.name, header.value, sensitive);

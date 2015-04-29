@@ -26,7 +26,6 @@ import org.openjdk.jmh.infra.Blackhole;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.List;
 
 public class EncoderBenchmark extends AbstractMicrobenchmarkBase {
@@ -47,17 +46,19 @@ public class EncoderBenchmark extends AbstractMicrobenchmarkBase {
     public boolean limitToAscii;
 
     private List<Header> headers;
+    private ByteArrayOutputStream outputStream;
 
     @Setup(Level.Trial)
     public void setup() {
         headers = headers(size, limitToAscii);
+        outputStream = size.newOutputStream();
     }
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     public void encode(Blackhole bh) throws IOException {
         Encoder encoder = new Encoder(maxTableSize);
-        OutputStream outputStream = new ByteArrayOutputStream(1048576);
+        outputStream.reset();
         if (duplicates) {
             // If duplicates is set, re-add the same header each time.
             Header header = headers.get(0);

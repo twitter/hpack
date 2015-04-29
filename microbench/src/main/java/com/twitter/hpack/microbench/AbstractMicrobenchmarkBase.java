@@ -15,8 +15,6 @@
  */
 package com.twitter.hpack.microbench;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Measurement;
@@ -51,29 +49,6 @@ public abstract class AbstractMicrobenchmarkBase {
             "-server", "-dsa", "-da", "-XX:+AggressiveOpts", "-XX:+UseBiasedLocking",
             "-XX:+UseFastAccessorMethods", "-XX:+OptimizeStringConcat",
             "-XX:+HeapDumpOnOutOfMemoryError"};
-
-    /**
-     * Enum that indicates the size of the headers to be used for the benchmark.
-     */
-    public enum HeadersSize {
-        SMALL(5, 20, 40),
-        MEDIUM(20, 40, 80),
-        LARGE(100, 100, 300);
-
-        final int numHeaders;
-        final int nameLength;
-        final int valueLength;
-
-        private HeadersSize(int numHeaders, int nameLength, int valueLength) {
-            this.numHeaders = numHeaders;
-            this.nameLength = nameLength;
-            this.valueLength = valueLength;
-        }
-
-        List<Header> newHeaders(boolean limitAscii) {
-            return Header.createHeaders(numHeaders, nameLength, valueLength, limitAscii);
-        }
-    }
 
     /**
      * Internal key used to index a particular set of headers in the map.
