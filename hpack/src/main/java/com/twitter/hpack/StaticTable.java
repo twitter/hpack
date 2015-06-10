@@ -27,7 +27,7 @@ final class StaticTable {
   private static final String EMPTY = "";
 
   // Appendix A: Static Table
-  // http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-10#appendix-A
+  // http://tools.ietf.org/html/rfc7541#appendix-A
   private static final List<HeaderField> STATIC_TABLE = Arrays.asList(
     /*  1 */ new HeaderField(":authority", EMPTY),
     /*  2 */ new HeaderField(":method", "GET"),

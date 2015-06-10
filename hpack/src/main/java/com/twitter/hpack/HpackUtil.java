@@ -52,7 +52,7 @@ final class HpackUtil {
   }
 
   // Appendix B: Huffman Codes
-  // http://tools.ietf.org/html/draft-ietf-httpbis-header-compression-10#appendix-B
+  // http://tools.ietf.org/html/rfc7541#appendix-B
   static final int[] HUFFMAN_CODES = {
       0x1ff8,
       0x7fffd8,
