@@ -51,6 +51,7 @@ public final class Decoder {
   private int nameLength;
   private int valueLength;
   private byte[] name;
+  private String nameString;
 
   private enum State {
     READ_HEADER_REPRESENTATION,
@@ -85,10 +86,21 @@ public final class Decoder {
     indexType = IndexType.NONE;
   }
 
+  public void decode(InputStream in, final HeaderListener headerListener) throws IOException {
+    decode(in, new ExtendedHeaderListener() {
+      @Override
+      public Object addHeader(byte[] name, String nameString, byte[] value, Object annotation,
+                              boolean sensitive) {
+        headerListener.addHeader(name, value, sensitive);
+        return null;
+      }
+    } );
+  }
+
   /**
    * Decode the header block into header fields.
    */
-  public void decode(InputStream in, HeaderListener headerListener) throws IOException {
+  public void decode(InputStream in, ExtendedHeaderListener headerListener) throws IOException {
     while (in.available() > 0) {
       switch(state) {
       case READ_HEADER_REPRESENTATION:
@@ -211,6 +223,7 @@ public final class Decoder {
             if (indexType == IndexType.NONE) {
               // Name is unused so skip bytes
               name = EMPTY;
+              nameString = null;
               skipLength = nameLength;
               state = State.SKIP_LITERAL_HEADER_NAME;
               break;
@@ -220,6 +233,7 @@ public final class Decoder {
             if (nameLength + HEADER_ENTRY_OVERHEAD > dynamicTable.capacity()) {
               dynamicTable.clear();
               name = EMPTY;
+              nameString = null;
               skipLength = nameLength;
               state = State.SKIP_LITERAL_HEADER_NAME;
               break;
@@ -247,6 +261,7 @@ public final class Decoder {
           if (indexType == IndexType.NONE) {
             // Name is unused so skip bytes
             name = EMPTY;
+            nameString = null;
             skipLength = nameLength;
             state = State.SKIP_LITERAL_HEADER_NAME;
             break;
@@ -256,6 +271,7 @@ public final class Decoder {
           if (nameLength + HEADER_ENTRY_OVERHEAD > dynamicTable.capacity()) {
             dynamicTable.clear();
             name = EMPTY;
+            nameString = null;
             skipLength = nameLength;
             state = State.SKIP_LITERAL_HEADER_NAME;
             break;
@@ -271,6 +287,7 @@ public final class Decoder {
         }
 
         name = readStringLiteral(in, nameLength);
+        nameString = new String(name, HpackUtil.ISO_8859_1);
 
         state = State.READ_LITERAL_HEADER_VALUE_LENGTH_PREFIX;
         break;
@@ -313,7 +330,7 @@ public final class Decoder {
           }
 
           if (valueLength == 0) {
-            insertHeader(headerListener, name, EMPTY, indexType);
+            insertHeader(headerListener, name, nameString, EMPTY, indexType);
             state = State.READ_HEADER_REPRESENTATION;
           } else {
             state = State.READ_LITERAL_HEADER_VALUE;
@@ -364,7 +381,7 @@ public final class Decoder {
         }
 
         byte[] value = readStringLiteral(in, valueLength);
-        insertHeader(headerListener, name, value, indexType);
+        insertHeader(headerListener, name, nameString, value, indexType);
         state = State.READ_HEADER_REPRESENTATION;
         break;
 
@@ -452,36 +469,48 @@ public final class Decoder {
     if (index <= StaticTable.length) {
       HeaderField headerField = StaticTable.getEntry(index);
       name = headerField.name;
+      nameString = headerField.nameString;
     } else if (index - StaticTable.length <= dynamicTable.length()) {
       HeaderField headerField = dynamicTable.getEntry(index - StaticTable.length);
       name = headerField.name;
+      nameString = headerField.nameString;
     } else {
       throw ILLEGAL_INDEX_VALUE;
     }
   }
 
-  private void indexHeader(int index, HeaderListener headerListener) throws IOException {
+  private void indexHeader(int index, ExtendedHeaderListener headerListener) throws IOException {
+    Object annotation;
     if (index <= StaticTable.length) {
       HeaderField headerField = StaticTable.getEntry(index);
-      addHeader(headerListener, headerField.name, headerField.value, false);
+      // The static table has a set of constant annotations so don't allow them to mutate
+      addHeader(headerListener, headerField.name, headerField.nameString, headerField.value,
+          headerField.valueAnnotation, false);
     } else if (index - StaticTable.length <= dynamicTable.length()) {
       HeaderField headerField = dynamicTable.getEntry(index - StaticTable.length);
-      addHeader(headerListener, headerField.name, headerField.value, false);
+      annotation = addHeader(headerListener, headerField.name, headerField.nameString,
+          headerField.value, headerField.valueAnnotation, false);
+      if (annotation != null) {
+        headerField.valueAnnotation = annotation;
+      }
     } else {
       throw ILLEGAL_INDEX_VALUE;
     }
   }
 
-  private void insertHeader(HeaderListener headerListener, byte[] name, byte[] value, IndexType indexType) {
-    addHeader(headerListener, name, value, indexType == IndexType.NEVER);
-
+  private void insertHeader(ExtendedHeaderListener headerListener, byte[] name, String nameString,
+                            byte[] value, IndexType indexType) {
+    Object annotation = addHeader(headerListener, name, nameString, value, null,
+        indexType == IndexType.NEVER);
     switch (indexType) {
       case NONE:
       case NEVER:
         break;
 
       case INCREMENTAL:
-        dynamicTable.add(new HeaderField(name, value));
+        HeaderField headerField = new HeaderField(name, nameString, value);
+        headerField.valueAnnotation = annotation;
+        dynamicTable.add(headerField);
         break;
 
       default:
@@ -489,18 +518,21 @@ public final class Decoder {
     }
   }
 
-  private void addHeader(HeaderListener headerListener, byte[] name, byte[] value, boolean sensitive) {
+  private Object addHeader(ExtendedHeaderListener headerListener, byte[] name, String nameString,
+                           byte[] value, Object valueAnnotation, boolean sensitive) {
     if (name.length == 0) {
       throw new AssertionError("name is empty");
     }
     long newSize = headerSize + name.length + value.length;
     if (newSize <= maxHeaderSize) {
-      headerListener.addHeader(name, value, sensitive);
+      valueAnnotation = headerListener.addHeader(name, nameString, value, valueAnnotation,
+          sensitive);
       headerSize = (int) newSize;
     } else {
       // truncation will be reported during endHeaderBlock
       headerSize = maxHeaderSize + 1;
     }
+    return valueAnnotation;
   }
 
   private boolean exceedsMaxHeaderSize(long size) {

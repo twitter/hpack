@@ -105,7 +105,7 @@ final class TestCase {
 
       List<HeaderField> expectedHeaders = new ArrayList<HeaderField>();
       for (HeaderField h : headerBlock.getHeaders()) {
-        expectedHeaders.add(new HeaderField(h.name, h.value));
+        expectedHeaders.add(new HeaderField(h.name, null, h.value));
       }
 
       if (!expectedHeaders.equals(actualHeaders)) {

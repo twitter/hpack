@@ -37,7 +37,7 @@ public class DecoderTest {
   private static final int MAX_HEADER_TABLE_SIZE = 4096;
 
   private Decoder decoder;
-  private HeaderListener mockListener;
+  private ExtendedHeaderListener mockListener;
 
   private static String hex(String s) {
     return Hex.encodeHexString(s.getBytes());
@@ -55,7 +55,7 @@ public class DecoderTest {
   @Before
   public void setUp() {
     decoder = new Decoder(MAX_HEADER_SIZE, MAX_HEADER_TABLE_SIZE);
-    mockListener = mock(HeaderListener.class);
+    mockListener = mock(ExtendedHeaderListener.class);
   }
 
   @Test
@@ -144,7 +144,7 @@ public class DecoderTest {
   public void testLiteralWithIncrementalIndexingCompleteEviction() throws Exception {
     // Verify indexed host header
     decode("4004" + hex("name") + "05" + hex("value"));
-    verify(mockListener).addHeader(getBytes("name"), getBytes("value"), false);
+    verify(mockListener).addHeader(getBytes("name"), "name", getBytes("value"), null, false);
     verifyNoMoreInteractions(mockListener);
     assertFalse(decoder.endHeaderBlock());
 
@@ -160,13 +160,15 @@ public class DecoderTest {
       sb.append("61"); // 'a'
     }
     decode(sb.toString());
-    verify(mockListener).addHeader(getBytes(":authority"), getBytes(value), false);
+    verify(mockListener).addHeader(getBytes(":authority"), ":authority", getBytes(value), null,
+        false);
     verifyNoMoreInteractions(mockListener);
     assertFalse(decoder.endHeaderBlock());
 
     // Verify next header is inserted at index 62
     decode("4004" + hex("name") + "05" + hex("value") + "BE");
-    verify(mockListener, times(2)).addHeader(getBytes("name"), getBytes("value"), false);
+    verify(mockListener, times(2)).addHeader(getBytes("name"), "name",
+        getBytes("value"), null, false);
     verifyNoMoreInteractions(mockListener);
   }
 
@@ -187,7 +189,8 @@ public class DecoderTest {
 
     // Verify next header is inserted at index 62
     decode("4004" + hex("name") + "05" + hex("value") + "BE");
-    verify(mockListener, times(2)).addHeader(getBytes("name"), getBytes("value"), false);
+    verify(mockListener, times(2)).addHeader(getBytes("name"), "name", getBytes("value"),
+        null, false);
     verifyNoMoreInteractions(mockListener);
   }
 
@@ -209,7 +212,8 @@ public class DecoderTest {
 
     // Verify next header is inserted at index 62
     decode("4004" + hex("name") + "05" + hex("value") + "BE");
-    verify(mockListener, times(2)).addHeader(getBytes("name"), getBytes("value"), false);
+    verify(mockListener, times(2)).addHeader(getBytes("name"), "name", getBytes("value"),
+        null, false);
     verifyNoMoreInteractions(mockListener);
   }
 

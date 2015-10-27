@@ -30,15 +30,38 @@ class HeaderField implements Comparable<HeaderField> {
   }
 
   final byte[] name;
+  final String nameString;
   final byte[] value;
+
+  // Used to store an annotation with the header entry
+  Object valueAnnotation;
 
   // This constructor can only be used if name and value are ISO-8859-1 encoded.
   HeaderField(String name, String value) {
-    this(name.getBytes(ISO_8859_1), value.getBytes(ISO_8859_1));
+    this(name, value, value);
   }
 
-  HeaderField(byte[] name, byte[] value) {
+  // This constructor can only be used if name and value are ISO-8859-1 encoded.
+  // Primarily used to initialize the static stable
+  HeaderField(String name, String value, Object valueAnnotation) {
+    this(name.getBytes(ISO_8859_1), name, value.getBytes(ISO_8859_1));
+    this.valueAnnotation = valueAnnotation;
+  }
+
+  HeaderField(byte[] name, String nameString, byte[] value, Object valueAnnotation) {
+    this.name = name;
+    this.nameString = nameString;
+    this.value = value;
+    this.valueAnnotation = valueAnnotation;
+  }
+
+  HeaderField(byte[] name, String nameString, byte[] value) {
     this.name = requireNonNull(name);
+    if (nameString == null) {
+      this.nameString = new String(name, ISO_8859_1);
+    } else {
+      this.nameString = nameString;
+    }
     this.value = requireNonNull(value);
   }
 

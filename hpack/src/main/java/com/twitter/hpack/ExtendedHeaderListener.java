@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Twitter, Inc.
+ * Copyright 2015 Twitter, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,20 +15,16 @@
  */
 package com.twitter.hpack;
 
-import java.util.List;
+public interface ExtendedHeaderListener {
 
-final class TestHeaderListener implements ExtendedHeaderListener {
-
-  private final List<HeaderField> headers;
-
-  TestHeaderListener(List<HeaderField> headers) {
-    this.headers = headers;
-  }
-
-  @Override
+  /**
+   * Called by the decoder during header field emission.
+   * The name and value byte arrays must not be modified.
+   *
+   * @param valueAnnotation the previous annotation value stored with the entry.
+   * @return the annotation mapping to store with the table entry. If {@code null} is returned
+   *         the current mapping is left unchanged.
+   */
   public Object addHeader(byte[] name, String nameString, byte[] value, Object valueAnnotation,
-                          boolean sensitive) {
-    headers.add(new HeaderField(name, nameString, value, valueAnnotation));
-    return null;
-  }
+                          boolean sensitive);
 }
