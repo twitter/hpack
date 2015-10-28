@@ -429,7 +429,7 @@ public final class Encoder {
      * Creates new entry.
      */
     HeaderEntry(int hash, byte[] name, byte[] value, int index, HeaderEntry next) {
-      super(name, null, value);
+      super(name, null, value, null);
       this.index = index;
       this.hash = hash;
       this.next = next;

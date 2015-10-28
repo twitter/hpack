@@ -508,9 +508,7 @@ public final class Decoder {
         break;
 
       case INCREMENTAL:
-        HeaderField headerField = new HeaderField(name, nameString, value);
-        headerField.valueAnnotation = annotation;
-        dynamicTable.add(headerField);
+        dynamicTable.add(HeaderField.forReceivedHeader(name, nameString, value, annotation));
         break;
 
       default:
