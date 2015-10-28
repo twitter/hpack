@@ -41,27 +41,25 @@ public class DecoderBenchmark extends AbstractMicrobenchmarkBase {
     static final ExtendedHeaderListener RECEIVE_HEADERS_AND_PARSE_AS_STRING =
         new ExtendedHeaderListener() {
       @Override
-      public Object addHeader(byte[] name, String nameString, byte[] value, Object valueAnnotation,
+      public void addHeader(byte[] name, byte[] value, Object[] annotations,
           boolean sensitive) {
         bh.consume(new String(name, ISO_8859_1));
         bh.consume(new String(value, ISO_8859_1));
         bh.consume(sensitive);
-        return null;
       }
     };
 
     static final ExtendedHeaderListener RECEIVE_HEADERS_AND_ANNOTATE =
         new ExtendedHeaderListener() {
       @Override
-      public Object addHeader(byte[] name, String nameString, byte[] value, Object valueAnnotation,
-                              boolean sensitive) {
-        bh.consume(nameString);
-        if (valueAnnotation == null) {
-          valueAnnotation = true;
+      public void addHeader(byte[] name, byte[] value, Object[] annotations,boolean sensitive) {
+        if (annotations[0] == null) {
+          annotations[0] = new String(name, ISO_8859_1);
+          annotations[1] = new String(value, ISO_8859_1);
         }
-        bh.consume(valueAnnotation);
+        bh.consume(annotations[0]);
+        bh.consume(annotations[1]);
         bh.consume(sensitive);
-        return valueAnnotation;
       }
     };
 
@@ -95,9 +93,8 @@ public class DecoderBenchmark extends AbstractMicrobenchmarkBase {
         commonDecoder.decode(new ByteArrayInputStream(input[0]),
             new ExtendedHeaderListener() {
           @Override
-          public Object addHeader(byte[] name, String nameString, byte[] value,
-                                  Object valueAnnotation, boolean sensitive) {
-            return null;
+          public void addHeader(byte[] name, byte[] value, Object[] annotations,
+                                boolean sensitive) {
           }
         });
         repeatedInput = new ByteArrayInputStream(input[1]);
@@ -109,10 +106,9 @@ public class DecoderBenchmark extends AbstractMicrobenchmarkBase {
         Decoder decoder = new Decoder(maxHeaderSize, maxTableSize);
         decoder.decode(new ByteArrayInputStream(input[0]), new ExtendedHeaderListener() {
             @Override
-            public Object addHeader(byte[] name, String nameString, byte[] value, Object annotation,
-                                    boolean sensitive) {
+            public void addHeader(byte[] name, byte[] value, Object[] annotations,
+                                  boolean sensitive) {
                 bh.consume(sensitive);
-                return null;
             }
         });
         decoder.endHeaderBlock();

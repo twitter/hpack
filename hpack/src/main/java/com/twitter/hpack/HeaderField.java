@@ -28,7 +28,6 @@ class HeaderField implements Comparable<HeaderField> {
   static HeaderField forNameOnly(String name) {
     return new HeaderField(
         requireNonNull(name).getBytes(ISO_8859_1),
-        name,
         EMPTY,
         null);
   }
@@ -37,38 +36,20 @@ class HeaderField implements Comparable<HeaderField> {
    * Construct a header field for a name and value that can be encoded with ISO-8859-1
    */
   static HeaderField forNameValue(String name, String value) {
-    return forNameAndParsedValue(name, value, value);
-  }
-
-  /**
-   * Construct a header field for a name and value that can be encoded with ISO-8859-1
-   */
-  static HeaderField forNameAndParsedValue(String name, String value, Object annotation) {
     return new HeaderField(
         requireNonNull(name).getBytes(ISO_8859_1),
-        name,
         requireNonNull(value).getBytes(ISO_8859_1),
-        annotation);
-  }
-
-  /**
-   * Construct a header field from the decoded bytes received.
-   */
-  static HeaderField forBytes(byte[] nameBytes, byte[] valueBytes) {
-    return forReceivedHeader(nameBytes, null, valueBytes, null);
+        null);
   }
 
   /**
    * Construct a header field from the decoded received bytes and an annotation.
    */
-  static HeaderField forReceivedHeader(byte[] nameBytes, String name,
-                                       byte[] valueBytes, Object annotation) {
+  static HeaderField forReceivedHeader(byte[] nameBytes, byte[] valueBytes,
+                                       Object[] annotations) {
     requireNonNull(nameBytes);
     requireNonNull(valueBytes);
-    if (name == null) {
-      name = new String(nameBytes, ISO_8859_1);
-    }
-    return new HeaderField(nameBytes, name, valueBytes, annotation);
+    return new HeaderField(nameBytes, valueBytes, annotations);
   }
 
   // Section 4.1. Calculating Table Size
@@ -81,21 +62,15 @@ class HeaderField implements Comparable<HeaderField> {
   }
 
   final byte[] name;
-  final String nameString;
   final byte[] value;
 
   // Used to store an annotation with the header entry
-  Object valueAnnotation;
+  Object[] annotations;
 
-  HeaderField(byte[] name, String nameString, byte[] value, Object valueAnnotation) {
+  HeaderField(byte[] name, byte[] value, Object[] annotations) {
     this.name = requireNonNull(name);
-    if (nameString == null) {
-      this.nameString = new String(name, ISO_8859_1);
-    } else {
-      this.nameString = nameString;
-    }
     this.value = requireNonNull(value);
-    this.valueAnnotation = valueAnnotation;
+    this.annotations = annotations;
   }
 
   int size() {

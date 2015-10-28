@@ -22,8 +22,11 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static com.twitter.hpack.HpackUtil.ISO_8859_1;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -144,7 +147,7 @@ public class DecoderTest {
   public void testLiteralWithIncrementalIndexingCompleteEviction() throws Exception {
     // Verify indexed host header
     decode("4004" + hex("name") + "05" + hex("value"));
-    verify(mockListener).addHeader(getBytes("name"), "name", getBytes("value"), null, false);
+    verify(mockListener).addHeader(getBytes("name"), getBytes("value"), new Object[2], false);
     verifyNoMoreInteractions(mockListener);
     assertFalse(decoder.endHeaderBlock());
 
@@ -160,15 +163,15 @@ public class DecoderTest {
       sb.append("61"); // 'a'
     }
     decode(sb.toString());
-    verify(mockListener).addHeader(getBytes(":authority"), ":authority", getBytes(value), null,
+    verify(mockListener).addHeader(getBytes(":authority"), getBytes(value), new Object[2],
         false);
     verifyNoMoreInteractions(mockListener);
     assertFalse(decoder.endHeaderBlock());
 
     // Verify next header is inserted at index 62
     decode("4004" + hex("name") + "05" + hex("value") + "BE");
-    verify(mockListener, times(2)).addHeader(getBytes("name"), "name",
-        getBytes("value"), null, false);
+    verify(mockListener, times(2)).addHeader(getBytes("name"), getBytes("value"), new Object[2],
+        false);
     verifyNoMoreInteractions(mockListener);
   }
 
@@ -189,8 +192,8 @@ public class DecoderTest {
 
     // Verify next header is inserted at index 62
     decode("4004" + hex("name") + "05" + hex("value") + "BE");
-    verify(mockListener, times(2)).addHeader(getBytes("name"), "name", getBytes("value"),
-        null, false);
+    verify(mockListener, times(2)).addHeader(getBytes("name"), getBytes("value"),
+        new Object[2], false);
     verifyNoMoreInteractions(mockListener);
   }
 
@@ -212,8 +215,8 @@ public class DecoderTest {
 
     // Verify next header is inserted at index 62
     decode("4004" + hex("name") + "05" + hex("value") + "BE");
-    verify(mockListener, times(2)).addHeader(getBytes("name"), "name", getBytes("value"),
-        null, false);
+    verify(mockListener, times(2)).addHeader(getBytes("name"), getBytes("value"),
+        new Object[2], false);
     verifyNoMoreInteractions(mockListener);
   }
 
@@ -303,5 +306,60 @@ public class DecoderTest {
 
     // Verify table is unmodified
     decode("BE");
+  }
+
+  @Test
+  public void testAnnotatedStaticTableValues() throws Exception {
+    Decoder d1 = new Decoder(256, 256);
+    Decoder d2 = new Decoder(256, 256);
+    // Index into static table for :method GET
+    byte[] bytes = new byte[]{ (byte) 0x82 };
+    d1.decode(new ByteArrayInputStream(bytes), new ExtendedHeaderListener() {
+      @Override
+      public void addHeader(byte[] name, byte[] value, Object[] annotations, boolean sensitive) {
+        assertArrayEquals(name, getBytes(":method"));
+        assertArrayEquals(value, getBytes("GET"));
+        annotations[0] = new Object();
+      }
+    });
+    // Test that value is retained
+    d1.decode(new ByteArrayInputStream(bytes), new ExtendedHeaderListener() {
+      @Override
+      public void addHeader(byte[] name, byte[] value, Object[] annotations, boolean sensitive) {
+        assertNotNull(annotations[0]);
+      }
+    });
+    // Test that value retention is not shared across decoder instances
+    d2.decode(new ByteArrayInputStream(bytes), new ExtendedHeaderListener() {
+      @Override
+      public void addHeader(byte[] name, byte[] value, Object[] annotations, boolean sensitive) {
+        assertNull(annotations[0]);
+      }
+    });
+  }
+
+  @Test
+  public void testAnnotatedDynamicTableValues() throws Exception {
+    String newEntry = "4004" + hex("name") + "05" + hex("value");
+    byte[] bytes = Hex.decodeHex(newEntry.toCharArray());
+
+    Decoder d1 = new Decoder(256, 256);
+    // Index into static table for :method GET
+    d1.decode(new ByteArrayInputStream(bytes), new ExtendedHeaderListener() {
+      @Override
+      public void addHeader(byte[] name, byte[] value, Object[] annotations, boolean sensitive) {
+        assertArrayEquals(name, getBytes("name"));
+        assertArrayEquals(value, getBytes("value"));
+        annotations[0] = new Object();
+      }
+    });
+    // New header added to dynamic table at index 63 so emit it using that
+    bytes = new byte[]{ (byte) 0xBE };
+    d1.decode(new ByteArrayInputStream(bytes), new ExtendedHeaderListener() {
+      @Override
+      public void addHeader(byte[] name, byte[] value, Object[] annotations, boolean sensitive) {
+        assertNotNull(annotations[0]);
+      }
+    });
   }
 }

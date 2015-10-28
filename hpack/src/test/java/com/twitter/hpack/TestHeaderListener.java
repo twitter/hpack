@@ -26,9 +26,7 @@ final class TestHeaderListener implements ExtendedHeaderListener {
   }
 
   @Override
-  public Object addHeader(byte[] name, String nameString, byte[] value, Object valueAnnotation,
-                          boolean sensitive) {
-    headers.add(new HeaderField(name, nameString, value, valueAnnotation));
-    return null;
+  public void addHeader(byte[] name, byte[] value, Object[] annotations, boolean sensitive) {
+    headers.add(HeaderField.forReceivedHeader(name, value, annotations));
   }
 }

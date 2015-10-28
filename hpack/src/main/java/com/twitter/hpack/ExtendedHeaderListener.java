@@ -21,10 +21,8 @@ public interface ExtendedHeaderListener {
    * Called by the decoder during header field emission.
    * The name and value byte arrays must not be modified.
    *
-   * @param valueAnnotation the previous annotation value stored with the entry.
-   * @return the annotation mapping to store with the table entry. If {@code null} is returned
-   *         the current mapping is left unchanged.
+   * @param annotations array of length=2 which listeners can use to store parsed versions
+   *                    of the header and value and have HPACK cache them with indexed entries.
    */
-  public Object addHeader(byte[] name, String nameString, byte[] value, Object valueAnnotation,
-                          boolean sensitive);
+  public void addHeader(byte[] name, byte[] value, Object[] annotations, boolean sensitive);
 }
