@@ -20,6 +20,38 @@ import static com.twitter.hpack.HpackUtil.requireNonNull;
 
 class HeaderField implements Comparable<HeaderField> {
 
+  private static final byte[] EMPTY = new byte[0];
+
+  /**
+   * Construct a header field for a name only that can be encoded with ISO-8859-1
+   */
+  static HeaderField forNameOnly(String name) {
+    return new HeaderField(
+        requireNonNull(name).getBytes(ISO_8859_1),
+        EMPTY,
+        null);
+  }
+
+  /**
+   * Construct a header field for a name and value that can be encoded with ISO-8859-1
+   */
+  static HeaderField forNameValue(String name, String value) {
+    return new HeaderField(
+        requireNonNull(name).getBytes(ISO_8859_1),
+        requireNonNull(value).getBytes(ISO_8859_1),
+        null);
+  }
+
+  /**
+   * Construct a header field from the decoded received bytes and an annotation.
+   */
+  static HeaderField forReceivedHeader(byte[] nameBytes, byte[] valueBytes,
+                                       Object[] annotations) {
+    requireNonNull(nameBytes);
+    requireNonNull(valueBytes);
+    return new HeaderField(nameBytes, valueBytes, annotations);
+  }
+
   // Section 4.1. Calculating Table Size
   // The additional 32 octets account for an estimated
   // overhead associated with the structure.
@@ -32,14 +64,13 @@ class HeaderField implements Comparable<HeaderField> {
   final byte[] name;
   final byte[] value;
 
-  // This constructor can only be used if name and value are ISO-8859-1 encoded.
-  HeaderField(String name, String value) {
-    this(name.getBytes(ISO_8859_1), value.getBytes(ISO_8859_1));
-  }
+  // Used to store an annotation with the header entry
+  Object[] annotations;
 
-  HeaderField(byte[] name, byte[] value) {
+  HeaderField(byte[] name, byte[] value, Object[] annotations) {
     this.name = requireNonNull(name);
     this.value = requireNonNull(value);
+    this.annotations = annotations;
   }
 
   int size() {

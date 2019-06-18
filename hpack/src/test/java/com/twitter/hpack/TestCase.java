@@ -105,7 +105,7 @@ final class TestCase {
 
       List<HeaderField> expectedHeaders = new ArrayList<HeaderField>();
       for (HeaderField h : headerBlock.getHeaders()) {
-        expectedHeaders.add(new HeaderField(h.name, h.value));
+        expectedHeaders.add(HeaderField.forReceivedHeader(h.name, h.value, null));
       }
 
       if (!expectedHeaders.equals(actualHeaders)) {
@@ -226,7 +226,7 @@ final class TestCase {
       Map.Entry<String, JsonElement> entry = entrySet.iterator().next();
       String name = entry.getKey();
       String value = entry.getValue().getAsString();
-      return new HeaderField(name, value);
+      return HeaderField.forNameValue(name, value);
     }
   }
 }

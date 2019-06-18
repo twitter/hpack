@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Twitter, Inc.
+ * Copyright 2015 Twitter, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,18 +15,14 @@
  */
 package com.twitter.hpack;
 
-import java.util.List;
+public interface ExtendedHeaderListener {
 
-final class TestHeaderListener implements ExtendedHeaderListener {
-
-  private final List<HeaderField> headers;
-
-  TestHeaderListener(List<HeaderField> headers) {
-    this.headers = headers;
-  }
-
-  @Override
-  public void addHeader(byte[] name, byte[] value, Object[] annotations, boolean sensitive) {
-    headers.add(HeaderField.forReceivedHeader(name, value, annotations));
-  }
+  /**
+   * Called by the decoder during header field emission.
+   * The name and value byte arrays must not be modified.
+   *
+   * @param annotations array of length=2 which listeners can use to store parsed versions
+   *                    of the header and value and have HPACK cache them with indexed entries.
+   */
+  public void addHeader(byte[] name, byte[] value, Object[] annotations, boolean sensitive);
 }

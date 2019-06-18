@@ -52,6 +52,9 @@ public final class Decoder {
   private int valueLength;
   private byte[] name;
 
+  private Object[][] staticTableAnnotations = new Object[StaticTable.length][2];
+  private Object[] tmpAnnotations = new Object[2];
+
   private enum State {
     READ_HEADER_REPRESENTATION,
     READ_MAX_DYNAMIC_TABLE_SIZE,
@@ -85,10 +88,19 @@ public final class Decoder {
     indexType = IndexType.NONE;
   }
 
+  public void decode(InputStream in, final HeaderListener headerListener) throws IOException {
+    decode(in, new ExtendedHeaderListener() {
+      @Override
+      public void addHeader(byte[] name, byte[] value, Object[] annotation, boolean sensitive) {
+        headerListener.addHeader(name, value, sensitive);
+      }
+    } );
+  }
+
   /**
    * Decode the header block into header fields.
    */
-  public void decode(InputStream in, HeaderListener headerListener) throws IOException {
+  public void decode(InputStream in, ExtendedHeaderListener headerListener) throws IOException {
     while (in.available() > 0) {
       switch(state) {
       case READ_HEADER_REPRESENTATION:
@@ -460,42 +472,54 @@ public final class Decoder {
     }
   }
 
-  private void indexHeader(int index, HeaderListener headerListener) throws IOException {
+  private void indexHeader(int index, ExtendedHeaderListener headerListener) throws IOException {
     if (index <= StaticTable.length) {
       HeaderField headerField = StaticTable.getEntry(index);
-      addHeader(headerListener, headerField.name, headerField.value, false);
+      // The static table has a set of constant annotations so don't allow them to mutate
+      addHeader(headerListener, headerField.name, headerField.value,
+          staticTableAnnotations[index - 1], false);
     } else if (index - StaticTable.length <= dynamicTable.length()) {
       HeaderField headerField = dynamicTable.getEntry(index - StaticTable.length);
-      addHeader(headerListener, headerField.name, headerField.value, false);
+      addHeader(headerListener, headerField.name, headerField.value, headerField.annotations,
+          false);
     } else {
       throw ILLEGAL_INDEX_VALUE;
     }
   }
 
-  private void insertHeader(HeaderListener headerListener, byte[] name, byte[] value, IndexType indexType) {
-    addHeader(headerListener, name, value, indexType == IndexType.NEVER);
+  private void insertHeader(ExtendedHeaderListener headerListener, byte[] name,
+                            byte[] value, IndexType indexType) {
+    try {
+      addHeader(headerListener, name, value, tmpAnnotations, indexType == IndexType.NEVER);
+      switch (indexType) {
+        case NONE:
+        case NEVER:
+          break;
 
-    switch (indexType) {
-      case NONE:
-      case NEVER:
-        break;
+        case INCREMENTAL:
+          dynamicTable.add(HeaderField.forReceivedHeader(name, value, tmpAnnotations));
+          break;
 
-      case INCREMENTAL:
-        dynamicTable.add(new HeaderField(name, value));
-        break;
-
-      default:
-        throw new IllegalStateException("should not reach here");
+        default:
+          throw new IllegalStateException("should not reach here");
+      }
+    } finally {
+      // The header was annotated so need to create a new slot to avoid overwriting the
+      // annotated values
+      if (tmpAnnotations[0] != null || tmpAnnotations[1] != null) {
+        tmpAnnotations = new Object[2];
+      }
     }
   }
 
-  private void addHeader(HeaderListener headerListener, byte[] name, byte[] value, boolean sensitive) {
+  private void addHeader(ExtendedHeaderListener headerListener, byte[] name,  byte[] value,
+                         Object[] annotations, boolean sensitive) {
     if (name.length == 0) {
       throw new AssertionError("name is empty");
     }
     long newSize = headerSize + name.length + value.length;
     if (newSize <= maxHeaderSize) {
-      headerListener.addHeader(name, value, sensitive);
+      headerListener.addHeader(name, value, annotations, sensitive);
       headerSize = (int) newSize;
     } else {
       // truncation will be reported during endHeaderBlock
