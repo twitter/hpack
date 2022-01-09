@@ -102,7 +102,7 @@ final class StaticTable {
   /**
    * Return the header field at the given index value.
    */
-  static HeaderField getEntry(int index) {
+  static HeaderField getEntry(final int index) {
     return STATIC_TABLE.get(index - 1);
   }
 
@@ -110,9 +110,9 @@ final class StaticTable {
    * Returns the lowest index value for the given header field name in the static table.
    * Returns -1 if the header field name is not in the static table.
    */
-  static int getIndex(byte[] name) {
-    String nameString = new String(name, 0, name.length, ISO_8859_1);
-    Integer index = STATIC_INDEX_BY_NAME.get(nameString);
+  static int getIndex(final byte[] name) {
+    final String nameString = new String(name, 0, name.length, ISO_8859_1);
+    final Integer index = STATIC_INDEX_BY_NAME.get(nameString);
     if (index == null) {
       return -1;
     }
@@ -123,7 +123,7 @@ final class StaticTable {
    * Returns the index value for the given header field in the static table.
    * Returns -1 if the header field is not in the static table.
    */
-  static int getIndex(byte[] name, byte[] value) {
+  static int getIndex(final byte[] name, final byte[] value) {
     int index = getIndex(name);
     if (index == -1) {
       return -1;
@@ -131,7 +131,7 @@ final class StaticTable {
 
     // Note this assumes all entries for a given header field are sequential.
     while (index <= length) {
-      HeaderField entry = getEntry(index);
+      final HeaderField entry = getEntry(index);
       if (!HpackUtil.equals(name, entry.name)) {
         break;
       }
@@ -146,13 +146,13 @@ final class StaticTable {
 
   // create a map of header name to index value to allow quick lookup
   private static Map<String, Integer> createMap() {
-    int length = STATIC_TABLE.size();
-    HashMap<String, Integer> ret = new HashMap<String, Integer>(length);
+    final int length = STATIC_TABLE.size();
+    final HashMap<String, Integer> ret = new HashMap<String, Integer>(length);
     // Iterate through the static table in reverse order to
     // save the smallest index for a given name in the map.
     for (int index = length; index > 0; index--) {
-      HeaderField entry = getEntry(index);
-      String name = new String(entry.name, 0, entry.name.length, ISO_8859_1);
+      final HeaderField entry = getEntry(index);
+      final String name = new String(entry.name, 0, entry.name.length, ISO_8859_1);
       ret.put(name, index);
     }
     return ret;

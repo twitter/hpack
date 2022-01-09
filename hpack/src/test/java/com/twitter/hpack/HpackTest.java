@@ -33,20 +33,20 @@ public class HpackTest {
 
   private final String fileName;
 
-  public HpackTest(String fileName) {
+  public HpackTest(final String fileName) {
     this.fileName = fileName;
   }
 
   @Parameters(name = "{0}")
   public static Collection<Object[]> data() {
-    URL url = HpackTest.class.getResource(TEST_DIR);
-    File[] files = new File(url.getFile()).listFiles();
+    final URL url = HpackTest.class.getResource(TEST_DIR);
+    final File[] files = new File(url.getFile()).listFiles();
     if (files == null) {
       throw new NullPointerException("files");
     }
 
-    ArrayList<Object[]> data = new ArrayList<Object[]>();
-    for (File file : files) {
+    final ArrayList<Object[]> data = new ArrayList<Object[]>();
+    for (final File file : files) {
       data.add(new Object[] { file.getName() });
     }
     return data;
@@ -54,8 +54,8 @@ public class HpackTest {
 
   @Test
   public void test() throws Exception {
-    InputStream is = HpackTest.class.getResourceAsStream(TEST_DIR + fileName);
-    TestCase testCase = TestCase.load(is);
+    final InputStream is = HpackTest.class.getResourceAsStream(TEST_DIR + fileName);
+    final TestCase testCase = TestCase.load(is);
     testCase.testCompress();
     testCase.testDecompress();
   }

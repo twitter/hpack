@@ -28,7 +28,7 @@ class Header {
     final byte[] name;
     final byte[] value;
 
-    Header(byte[] name, byte[] value) {
+    Header(final byte[] name, final byte[] value) {
         this.name = name;
         this.value = value;
     }
@@ -36,22 +36,22 @@ class Header {
     /**
      * Creates a number of random headers with the given name/value lengths.
      */
-    static List<Header> createHeaders(int numHeaders, int nameLength, int valueLength, boolean limitToAscii) {
-        List<Header> headers = new ArrayList<Header>(numHeaders);
-        Random r = new Random();
+    static List<Header> createHeaders(final int numHeaders, final int nameLength, final int valueLength, final boolean limitToAscii) {
+        final List<Header> headers = new ArrayList<Header>(numHeaders);
+        final Random r = new Random();
         for (int i = 0; i < numHeaders; ++i) {
-            byte[] name = randomBytes(new byte[nameLength], limitToAscii);
-            byte[] value = randomBytes(new byte[valueLength], limitToAscii);
+            final byte[] name = randomBytes(new byte[nameLength], limitToAscii);
+            final byte[] value = randomBytes(new byte[valueLength], limitToAscii);
             headers.add(new Header(name, value));
         }
         return headers;
     }
 
-    private static byte[] randomBytes(byte[] bytes, boolean limitToAscii) {
-        Random r = new Random();
+    private static byte[] randomBytes(final byte[] bytes, final boolean limitToAscii) {
+        final Random r = new Random();
         if (limitToAscii) {
             for (int index=0; index < bytes.length; ++index) {
-                int charIndex = r.nextInt(ALPHABET.length());
+                final int charIndex = r.nextInt(ALPHABET.length());
                 bytes[index] = (byte) ALPHABET.charAt(charIndex);
             }
         } else {

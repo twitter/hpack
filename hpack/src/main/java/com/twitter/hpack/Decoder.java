@@ -37,7 +37,7 @@ public final class Decoder {
 
   private final DynamicTable dynamicTable;
 
-  private int maxHeaderSize;
+  private final int maxHeaderSize;
   private int maxDynamicTableSize;
   private int encoderMaxDynamicTableSize;
   private boolean maxDynamicTableSizeChangeRequired;
@@ -70,7 +70,7 @@ public final class Decoder {
   /**
    * Creates a new decoder.
    */
-  public Decoder(int maxHeaderSize, int maxHeaderTableSize) {
+  public Decoder(final int maxHeaderSize, final int maxHeaderTableSize) {
     dynamicTable = new DynamicTable(maxHeaderTableSize);
     this.maxHeaderSize = maxHeaderSize;
     maxDynamicTableSize = maxHeaderTableSize;
@@ -88,7 +88,7 @@ public final class Decoder {
   /**
    * Decode the header block into header fields.
    */
-  public void decode(InputStream in, HeaderListener headerListener) throws IOException {
+  public void decode(final InputStream in, final HeaderListener headerListener) throws IOException {
     while (in.available() > 0) {
       switch(state) {
       case READ_HEADER_REPRESENTATION:
@@ -146,7 +146,7 @@ public final class Decoder {
         break;
 
       case READ_MAX_DYNAMIC_TABLE_SIZE:
-        int maxSize = decodeULE128(in);
+        final int maxSize = decodeULE128(in);
         if (maxSize == -1) {
           return;
         }
@@ -161,7 +161,7 @@ public final class Decoder {
         break;
 
       case READ_INDEXED_HEADER:
-        int headerIndex = decodeULE128(in);
+        final int headerIndex = decodeULE128(in);
         if (headerIndex == -1) {
           return;
         }
@@ -177,7 +177,7 @@ public final class Decoder {
 
       case READ_INDEXED_HEADER_NAME:
         // Header Name matches an entry in the Header Table
-        int nameIndex = decodeULE128(in);
+        final int nameIndex = decodeULE128(in);
         if (nameIndex == -1) {
           return;
         }
@@ -293,7 +293,7 @@ public final class Decoder {
           valueLength = index;
 
           // Check new header size against max header size
-          long newHeaderSize = (long) nameLength + (long) valueLength;
+          final long newHeaderSize = (long) nameLength + (long) valueLength;
           if (exceedsMaxHeaderSize(newHeaderSize)) {
             // truncation will be reported during endHeaderBlock
             headerSize = maxHeaderSize + 1;
@@ -336,7 +336,7 @@ public final class Decoder {
         valueLength += index;
 
         // Check new header size against max header size
-        long newHeaderSize = (long) nameLength + (long) valueLength;
+        final long newHeaderSize = (long) nameLength + (long) valueLength;
         if (newHeaderSize + headerSize > maxHeaderSize) {
           // truncation will be reported during endHeaderBlock
           headerSize = maxHeaderSize + 1;
@@ -363,7 +363,7 @@ public final class Decoder {
           return;
         }
 
-        byte[] value = readStringLiteral(in, valueLength);
+        final byte[] value = readStringLiteral(in, valueLength);
         insertHeader(headerListener, name, value, indexType);
         state = State.READ_HEADER_REPRESENTATION;
         break;
@@ -387,7 +387,7 @@ public final class Decoder {
    * This must be called after the header block has been completely decoded.
    */
   public boolean endHeaderBlock() {
-    boolean truncated = headerSize > maxHeaderSize;
+    final boolean truncated = headerSize > maxHeaderSize;
     reset();
     return truncated;
   }
@@ -397,7 +397,7 @@ public final class Decoder {
    * If this is below the maximum size of the dynamic table used by the encoder,
    * the beginning of the next header block MUST signal this change.
    */
-  public void setMaxHeaderTableSize(int maxHeaderTableSize) {
+  public void setMaxHeaderTableSize(final int maxHeaderTableSize) {
     maxDynamicTableSize = maxHeaderTableSize;
     if (maxDynamicTableSize < encoderMaxDynamicTableSize) {
       // decoder requires less space than encoder
@@ -435,11 +435,11 @@ public final class Decoder {
    * Return the header field at the given index.
    * Exposed for testing.
    */
-  HeaderField getHeaderField(int index) {
+  HeaderField getHeaderField(final int index) {
     return dynamicTable.getEntry(index + 1);
   }
 
-  private void setDynamicTableSize(int dynamicTableSize) throws IOException {
+  private void setDynamicTableSize(final int dynamicTableSize) throws IOException {
     if (dynamicTableSize > maxDynamicTableSize) {
       throw INVALID_MAX_DYNAMIC_TABLE_SIZE;
     }
@@ -448,31 +448,31 @@ public final class Decoder {
     dynamicTable.setCapacity(dynamicTableSize);
   }
 
-  private void readName(int index) throws IOException {
+  private void readName(final int index) throws IOException {
     if (index <= StaticTable.length) {
-      HeaderField headerField = StaticTable.getEntry(index);
+      final HeaderField headerField = StaticTable.getEntry(index);
       name = headerField.name;
     } else if (index - StaticTable.length <= dynamicTable.length()) {
-      HeaderField headerField = dynamicTable.getEntry(index - StaticTable.length);
+      final HeaderField headerField = dynamicTable.getEntry(index - StaticTable.length);
       name = headerField.name;
     } else {
       throw ILLEGAL_INDEX_VALUE;
     }
   }
 
-  private void indexHeader(int index, HeaderListener headerListener) throws IOException {
+  private void indexHeader(final int index, final HeaderListener headerListener) throws IOException {
     if (index <= StaticTable.length) {
-      HeaderField headerField = StaticTable.getEntry(index);
+      final HeaderField headerField = StaticTable.getEntry(index);
       addHeader(headerListener, headerField.name, headerField.value, false);
     } else if (index - StaticTable.length <= dynamicTable.length()) {
-      HeaderField headerField = dynamicTable.getEntry(index - StaticTable.length);
+      final HeaderField headerField = dynamicTable.getEntry(index - StaticTable.length);
       addHeader(headerListener, headerField.name, headerField.value, false);
     } else {
       throw ILLEGAL_INDEX_VALUE;
     }
   }
 
-  private void insertHeader(HeaderListener headerListener, byte[] name, byte[] value, IndexType indexType) {
+  private void insertHeader(final HeaderListener headerListener, final byte[] name, final byte[] value, final IndexType indexType) {
     addHeader(headerListener, name, value, indexType == IndexType.NEVER);
 
     switch (indexType) {
@@ -489,11 +489,11 @@ public final class Decoder {
     }
   }
 
-  private void addHeader(HeaderListener headerListener, byte[] name, byte[] value, boolean sensitive) {
+  private void addHeader(final HeaderListener headerListener, final byte[] name, final byte[] value, final boolean sensitive) {
     if (name.length == 0) {
       throw new AssertionError("name is empty");
     }
-    long newSize = headerSize + name.length + value.length;
+    final long newSize = headerSize + name.length + value.length;
     if (newSize <= maxHeaderSize) {
       headerListener.addHeader(name, value, sensitive);
       headerSize = (int) newSize;
@@ -503,7 +503,7 @@ public final class Decoder {
     }
   }
 
-  private boolean exceedsMaxHeaderSize(long size) {
+  private boolean exceedsMaxHeaderSize(final long size) {
     // Check new header size against max header size
     if (size + headerSize <= maxHeaderSize) {
       return false;
@@ -514,8 +514,8 @@ public final class Decoder {
     return true;
   }
 
-  private byte[] readStringLiteral(InputStream in, int length) throws IOException {
-    byte[] buf = new byte[length];
+  private byte[] readStringLiteral(final InputStream in, final int length) throws IOException {
+    final byte[] buf = new byte[length];
     if (in.read(buf) != length) {
       throw DECOMPRESSION_EXCEPTION;
     }
@@ -528,7 +528,7 @@ public final class Decoder {
   }
 
   // Unsigned Little Endian Base 128 Variable-Length Integer Encoding
-  private static int decodeULE128(InputStream in) throws IOException {
+  private static int decodeULE128(final InputStream in) throws IOException {
     in.mark(5);
     int result = 0;
     int shift = 0;
@@ -539,7 +539,7 @@ public final class Decoder {
         in.reset();
         return -1;
       }
-      byte b = (byte) in.read();
+      final byte b = (byte) in.read();
       if (shift == 28 && (b & 0xF8) != 0) {
         break;
       }

@@ -58,22 +58,22 @@ public class DecoderBenchmark extends AbstractMicrobenchmarkBase {
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     public void decode(final Blackhole bh) throws IOException {
-        Decoder decoder = new Decoder(maxHeaderSize, maxTableSize);
+        final Decoder decoder = new Decoder(maxHeaderSize, maxTableSize);
         decoder.decode(new ByteArrayInputStream(input), new HeaderListener() {
             @Override
-            public void addHeader(byte[] name, byte[] value, boolean sensitive) {
+            public void addHeader(final byte[] name, final byte[] value, final boolean sensitive) {
                 bh.consume(sensitive);
             }
         });
         decoder.endHeaderBlock();
     }
 
-    private byte[] getSerializedHeaders(List<Header> headers, boolean sensitive) throws IOException {
-        Encoder encoder = new Encoder(4096);
+    private byte[] getSerializedHeaders(final List<Header> headers, final boolean sensitive) throws IOException {
+        final Encoder encoder = new Encoder(4096);
 
-        ByteArrayOutputStream outputStream = size.newOutputStream();
+        final ByteArrayOutputStream outputStream = size.newOutputStream();
         for (int i = 0; i < headers.size(); ++i) {
-            Header header = headers.get(i);
+            final Header header = headers.get(i);
             encoder.encodeHeader(outputStream, header.name, header.value, sensitive);
         }
         return outputStream.toByteArray();

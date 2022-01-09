@@ -25,7 +25,7 @@ class HeaderField implements Comparable<HeaderField> {
   // overhead associated with the structure.
   static final int HEADER_ENTRY_OVERHEAD = 32;
 
-  static int sizeOf(byte[] name, byte[] value) {
+  static int sizeOf(final byte[] name, final byte[] value) {
     return name.length + value.length + HEADER_ENTRY_OVERHEAD;
   }
 
@@ -33,11 +33,11 @@ class HeaderField implements Comparable<HeaderField> {
   final byte[] value;
 
   // This constructor can only be used if name and value are ISO-8859-1 encoded.
-  HeaderField(String name, String value) {
+  HeaderField(final String name, final String value) {
     this(name.getBytes(ISO_8859_1), value.getBytes(ISO_8859_1));
   }
 
-  HeaderField(byte[] name, byte[] value) {
+  HeaderField(final byte[] name, final byte[] value) {
     this.name = requireNonNull(name);
     this.value = requireNonNull(value);
   }
@@ -47,7 +47,7 @@ class HeaderField implements Comparable<HeaderField> {
   }
 
   @Override
-  public int compareTo(HeaderField anotherHeaderField) {
+  public int compareTo(final HeaderField anotherHeaderField) {
     int ret = compareTo(name, anotherHeaderField.name);
     if (ret == 0) {
       ret = compareTo(value, anotherHeaderField.value);
@@ -55,15 +55,15 @@ class HeaderField implements Comparable<HeaderField> {
     return ret;
   }
 
-  private int compareTo(byte[] s1, byte[] s2) {
-    int len1 = s1.length;
-    int len2 = s2.length;
-    int lim = Math.min(len1, len2);
+  private int compareTo(final byte[] s1, final byte[] s2) {
+    final int len1 = s1.length;
+    final int len2 = s2.length;
+    final int lim = Math.min(len1, len2);
 
     int k = 0;
     while (k < lim) {
-      byte b1 = s1[k];
-      byte b2 = s2[k];
+      final byte b1 = s1[k];
+      final byte b2 = s2[k];
       if (b1 != b2) {
         return b1 - b2;
       }
@@ -73,23 +73,23 @@ class HeaderField implements Comparable<HeaderField> {
   }
 
   @Override
-  public boolean equals(Object obj) {
+  public boolean equals(final Object obj) {
     if (obj == this) {
       return true;
     }
     if (!(obj instanceof HeaderField)) {
       return false;
     }
-    HeaderField other = (HeaderField) obj;
-    boolean nameEquals = HpackUtil.equals(name, other.name);
-    boolean valueEquals = HpackUtil.equals(value, other.value);
+    final HeaderField other = (HeaderField) obj;
+    final boolean nameEquals = HpackUtil.equals(name, other.name);
+    final boolean valueEquals = HpackUtil.equals(value, other.value);
     return nameEquals && valueEquals;
   }
 
   @Override
   public String toString() {
-    String nameString = new String(name);
-    String valueString = new String(value);
+    final String nameString = new String(name);
+    final String valueString = new String(value);
     return nameString + ": " + valueString;
   }
 }

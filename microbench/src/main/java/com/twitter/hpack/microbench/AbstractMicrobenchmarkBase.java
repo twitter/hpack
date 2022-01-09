@@ -57,7 +57,7 @@ public abstract class AbstractMicrobenchmarkBase {
         final HeadersSize size;
         final boolean limitToAscii;
 
-        public HeadersKey(HeadersSize size, boolean limitToAscii) {
+        public HeadersKey(final HeadersSize size, final boolean limitToAscii) {
             this.size = size;
             this.limitToAscii = limitToAscii;
         }
@@ -67,11 +67,11 @@ public abstract class AbstractMicrobenchmarkBase {
         }
 
         @Override
-        public boolean equals(Object o) {
+        public boolean equals(final Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            HeadersKey that = (HeadersKey) o;
+            final HeadersKey that = (HeadersKey) o;
 
             if (limitToAscii != that.limitToAscii) return false;
             return size == that.size;
@@ -88,9 +88,9 @@ public abstract class AbstractMicrobenchmarkBase {
 
     private static final Map<HeadersKey, List<Header>> headersMap;
     static {
-        HeadersSize[] sizes = HeadersSize.values();
+        final HeadersSize[] sizes = HeadersSize.values();
         headersMap = new HashMap<HeadersKey, List<Header>>(sizes.length * 2);
-        for (HeadersSize size : sizes) {
+        for (final HeadersSize size : sizes) {
             HeadersKey key = new HeadersKey(size, true);
             headersMap.put(key, key.newHeaders());
 
@@ -102,14 +102,14 @@ public abstract class AbstractMicrobenchmarkBase {
     /**
      * Gets headers for the given size and whether the key/values should be limited to ASCII.
      */
-    protected static List<Header> headers(HeadersSize size, boolean limitToAscii) {
+    protected static List<Header> headers(final HeadersSize size, final boolean limitToAscii) {
         return headersMap.get(new HeadersKey(size, limitToAscii));
     }
 
     protected ChainedOptionsBuilder newOptionsBuilder() throws Exception {
-        String className = getClass().getSimpleName();
+        final String className = getClass().getSimpleName();
 
-        ChainedOptionsBuilder runnerOptions = new OptionsBuilder()
+        final ChainedOptionsBuilder runnerOptions = new OptionsBuilder()
                 .include(".*" + className + ".*")
                 .jvmArgs(jvmArgs());
 
@@ -126,8 +126,8 @@ public abstract class AbstractMicrobenchmarkBase {
         }
 
         if (getReportDir() != null) {
-            String filePath = getReportDir() + className + ".json";
-            File file = new File(filePath);
+            final String filePath = getReportDir() + className + ".json";
+            final File file = new File(filePath);
             if (file.exists()) {
                 file.delete();
             } else {
@@ -167,15 +167,15 @@ public abstract class AbstractMicrobenchmarkBase {
         return System.getProperty("perfReportDir");
     }
 
-    private static int getIntProperty(String key, int def) {
-        String value = System.getProperty(key);
+    private static int getIntProperty(final String key, final int def) {
+        final String value = System.getProperty(key);
         if (value == null) {
             return def;
         }
 
         try {
             return Integer.parseInt(value);
-        } catch (NumberFormatException e) {
+        } catch (final NumberFormatException e) {
             logger.warning(
                     "Unable to parse the integer system property '" + key + "':" + value + " - " +
                             "using the default value: " + def);
