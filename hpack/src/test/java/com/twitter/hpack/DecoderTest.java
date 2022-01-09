@@ -39,16 +39,16 @@ public class DecoderTest {
   private Decoder decoder;
   private HeaderListener mockListener;
 
-  private static String hex(String s) {
+  private static String hex(final String s) {
     return Hex.encodeHexString(s.getBytes());
   }
 
-  private static byte[] getBytes(String s) {
+  private static byte[] getBytes(final String s) {
     return s.getBytes(ISO_8859_1);
   }
 
-  private void decode(String encoded) throws IOException {
-    byte[] b = Hex.decodeHex(encoded.toCharArray());
+  private void decode(final String encoded) throws IOException {
+    final byte[] b = Hex.decodeHex(encoded.toCharArray());
     decoder.decode(new ByteArrayInputStream(b), mockListener);
   }
 
@@ -61,8 +61,8 @@ public class DecoderTest {
   @Test
   public void testIncompleteIndex() throws IOException {
     // Verify incomplete indices are unread
-    byte[] compressed = Hex.decodeHex("FFF0".toCharArray());
-    ByteArrayInputStream in = new ByteArrayInputStream(compressed);
+    final byte[] compressed = Hex.decodeHex("FFF0".toCharArray());
+    final ByteArrayInputStream in = new ByteArrayInputStream(compressed);
     decoder.decode(in, mockListener);
     assertEquals(1, in.available());
     decoder.decode(in, mockListener);
@@ -153,7 +153,7 @@ public class DecoderTest {
     for (int i = 0; i < 4096; i++) {
       sb.append("a");
     }
-    String value = sb.toString();
+    final String value = sb.toString();
     sb = new StringBuilder();
     sb.append("417F811F");
     for (int i = 0; i < 4096; i++) {
@@ -173,7 +173,7 @@ public class DecoderTest {
   @Test
   public void testLiteralWithIncrementalIndexingWithLargeName() throws Exception {
     // Ignore header name that exceeds max header size
-    StringBuilder sb = new StringBuilder();
+    final StringBuilder sb = new StringBuilder();
     sb.append("407F817F");
     for (int i = 0; i < 16384; i++) {
       sb.append("61"); // 'a'
@@ -194,7 +194,7 @@ public class DecoderTest {
   @Test
   public void testLiteralWithIncrementalIndexingWithLargeValue() throws Exception {
     // Ignore header that exceeds max header size
-    StringBuilder sb = new StringBuilder();
+    final StringBuilder sb = new StringBuilder();
     sb.append("4004");
     sb.append(hex("name"));
     sb.append("7F813F");
@@ -221,7 +221,7 @@ public class DecoderTest {
   @Test(expected = IOException.class)
   public void testLiteralWithoutIndexingWithLargeName() throws Exception {
     // Ignore header name that exceeds max header size
-    StringBuilder sb = new StringBuilder();
+    final StringBuilder sb = new StringBuilder();
     sb.append("007F817F");
     for (int i = 0; i < 16384; i++) {
       sb.append("61"); // 'a'
@@ -240,7 +240,7 @@ public class DecoderTest {
   @Test(expected = IOException.class)
   public void testLiteralWithoutIndexingWithLargeValue() throws Exception {
     // Ignore header that exceeds max header size
-    StringBuilder sb = new StringBuilder();
+    final StringBuilder sb = new StringBuilder();
     sb.append("0004");
     sb.append(hex("name"));
     sb.append("7F813F");
@@ -265,7 +265,7 @@ public class DecoderTest {
   @Test(expected = IOException.class)
   public void testLiteralNeverIndexedWithLargeName() throws Exception {
     // Ignore header name that exceeds max header size
-    StringBuilder sb = new StringBuilder();
+    final StringBuilder sb = new StringBuilder();
     sb.append("107F817F");
     for (int i = 0; i < 16384; i++) {
       sb.append("61"); // 'a'
@@ -284,7 +284,7 @@ public class DecoderTest {
   @Test(expected = IOException.class)
   public void testLiteralNeverIndexedWithLargeValue() throws Exception {
     // Ignore header that exceeds max header size
-    StringBuilder sb = new StringBuilder();
+    final StringBuilder sb = new StringBuilder();
     sb.append("1004");
     sb.append(hex("name"));
     sb.append("7F813F");

@@ -21,12 +21,12 @@ final class TestHeaderListener implements HeaderListener {
 
   private final List<HeaderField> headers;
 
-  TestHeaderListener(List<HeaderField> headers) {
+  TestHeaderListener(final List<HeaderField> headers) {
     this.headers = headers;
   }
 
   @Override
-  public void addHeader(byte[] name, byte[] value, boolean sensitive) {
+  public void addHeader(final byte[] name, final byte[] value, final boolean sensitive) {
     headers.add(new HeaderField(name, value));
   }
 }

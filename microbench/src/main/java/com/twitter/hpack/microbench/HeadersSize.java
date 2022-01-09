@@ -30,13 +30,13 @@ public enum HeadersSize {
     private final int nameLength;
     private final int valueLength;
 
-    HeadersSize(int numHeaders, int nameLength, int valueLength) {
+    HeadersSize(final int numHeaders, final int nameLength, final int valueLength) {
         this.numHeaders = numHeaders;
         this.nameLength = nameLength;
         this.valueLength = valueLength;
     }
 
-    public List<Header> newHeaders(boolean limitAscii) {
+    public List<Header> newHeaders(final boolean limitAscii) {
         return Header.createHeaders(numHeaders, nameLength, valueLength, limitAscii);
     }
 

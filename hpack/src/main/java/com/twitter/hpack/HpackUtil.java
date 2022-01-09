@@ -24,7 +24,7 @@ final class HpackUtil {
   /**
    * A string compare that doesn't leak timing information.
    */
-  static boolean equals(byte[] s1, byte[] s2) {
+  static boolean equals(final byte[] s1, final byte[] s2) {
     if (s1.length != s2.length) {
       return false;
     }
@@ -38,7 +38,7 @@ final class HpackUtil {
   /**
    * Checks that the specified object reference is not {@code null}.
    */
-  static <T> T requireNonNull(T obj) {
+  static <T> T requireNonNull(final T obj) {
     if (obj == null)
       throw new NullPointerException();
     return obj;

@@ -28,7 +28,7 @@ final class HuffmanEncoder {
    * @param codes   the Huffman codes indexed by symbol
    * @param lengths the length of each Huffman code
    */
-  HuffmanEncoder(int[] codes, byte[] lengths) {
+  HuffmanEncoder(final int[] codes, final byte[] lengths) {
     this.codes = codes;
     this.lengths = lengths;
   }
@@ -40,7 +40,7 @@ final class HuffmanEncoder {
    * @throws IOException if an I/O error occurs.
    * @see    com.twitter.hpack.HuffmanEncoder#encode(OutputStream, byte[], int, int)
    */
-  public void encode(OutputStream out, byte[] data) throws IOException {
+  public void encode(final OutputStream out, final byte[] data) throws IOException {
     encode(out, data, 0, data.length);
   }
 
@@ -54,7 +54,7 @@ final class HuffmanEncoder {
    *         an <code>IOException</code> may be thrown if the
    *         output stream has been closed.
    */
-  public void encode(OutputStream out, byte[] data, int off, int len) throws IOException {
+  public void encode(final OutputStream out, final byte[] data, final int off, final int len) throws IOException {
     if (out == null) {
       throw new NullPointerException("out");
     } else if (data == null) {
@@ -69,9 +69,9 @@ final class HuffmanEncoder {
     int n = 0;
 
     for (int i = 0; i < len; i++) {
-      int b = data[off + i] & 0xFF;
-      int code = codes[b];
-      int nbits = lengths[b];
+      final int b = data[off + i] & 0xFF;
+      final int code = codes[b];
+      final int nbits = lengths[b];
 
       current <<= nbits;
       current |= code;
@@ -95,12 +95,12 @@ final class HuffmanEncoder {
    * @param  data the string literal to be Huffman encoded
    * @return the number of bytes required to Huffman encode <code>data</code>
    */
-  public int getEncodedLength(byte[] data) {
+  public int getEncodedLength(final byte[] data) {
     if (data == null) {
       throw new NullPointerException("data");
     }
     long len = 0;
-    for (byte b : data) {
+    for (final byte b : data) {
       len += lengths[b & 0xFF];
     }
     return (int)((len + 7) >> 3);

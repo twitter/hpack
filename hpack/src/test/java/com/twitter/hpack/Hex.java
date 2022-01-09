@@ -46,15 +46,15 @@ final class Hex {
    * @throws IOException
    *             Thrown if an odd number or illegal of characters is supplied
    */
-  public static byte[] decodeHex(char[] data) throws IOException {
+  public static byte[] decodeHex(final char[] data) throws IOException {
 
-    int len = data.length;
+    final int len = data.length;
 
     if ((len & 0x01) != 0) {
       throw new IOException("Odd number of characters.");
     }
 
-    byte[] out = new byte[len >> 1];
+    final byte[] out = new byte[len >> 1];
 
     // two characters form the hex value.
     for (int i = 0, j = 0; j < len; i++) {
@@ -77,7 +77,7 @@ final class Hex {
    *            a byte[] to convert to Hex characters
    * @return A char[] containing hexadecimal characters
    */
-  public static char[] encodeHex(byte[] data) {
+  public static char[] encodeHex(final byte[] data) {
     return encodeHex(data, true);
   }
 
@@ -93,7 +93,7 @@ final class Hex {
    * @return A char[] containing hexadecimal characters
    * @since 1.4
    */
-  public static char[] encodeHex(byte[] data, boolean toLowerCase) {
+  public static char[] encodeHex(final byte[] data, final boolean toLowerCase) {
     return encodeHex(data, toLowerCase ? DIGITS_LOWER : DIGITS_UPPER);
   }
 
@@ -109,9 +109,9 @@ final class Hex {
    * @return A char[] containing hexadecimal characters
    * @since 1.4
    */
-  protected static char[] encodeHex(byte[] data, char[] toDigits) {
-    int l = data.length;
-    char[] out = new char[l << 1];
+  protected static char[] encodeHex(final byte[] data, final char[] toDigits) {
+    final int l = data.length;
+    final char[] out = new char[l << 1];
     // two characters form the hex value.
     for (int i = 0, j = 0; i < l; i++) {
       out[j++] = toDigits[(0xF0 & data[i]) >>> 4];
@@ -129,7 +129,7 @@ final class Hex {
    * @return A String containing hexadecimal characters
    * @since 1.4
    */
-  public static String encodeHexString(byte[] data) {
+  public static String encodeHexString(final byte[] data) {
     return new String(encodeHex(data));
   }
 
@@ -144,8 +144,8 @@ final class Hex {
    * @throws IOException
    *             Thrown if ch is an illegal hex character
    */
-  protected static int toDigit(char ch, int index) throws IOException {
-    int digit = Character.digit(ch, 16);
+  protected static int toDigit(final char ch, final int index) throws IOException {
+    final int digit = Character.digit(ch, 16);
     if (digit == -1) {
       throw new IOException("Illegal hexadecimal character " + ch + " at index " + index);
     }

@@ -43,8 +43,8 @@ final class TestCase {
       .registerTypeAdapter(HeaderField.class, new HeaderFieldDeserializer())
       .create();
 
-  int maxHeaderTableSize = -1;
-  boolean useIndexing = true;
+  final int maxHeaderTableSize = -1;
+  final boolean useIndexing = true;
   boolean sensitiveHeaders;
   boolean forceHuffmanOn;
   boolean forceHuffmanOff;
@@ -53,21 +53,21 @@ final class TestCase {
 
   private TestCase() {}
 
-  static TestCase load(InputStream is) throws IOException {
-    InputStreamReader r = new InputStreamReader(is);
-    TestCase testCase = GSON.fromJson(r, TestCase.class);
-    for (HeaderBlock headerBlock : testCase.headerBlocks) {
+  static TestCase load(final InputStream is) throws IOException {
+    final InputStreamReader r = new InputStreamReader(is);
+    final TestCase testCase = GSON.fromJson(r, TestCase.class);
+    for (final HeaderBlock headerBlock : testCase.headerBlocks) {
       headerBlock.encodedBytes = Hex.decodeHex(headerBlock.getEncodedStr().toCharArray());
     }
     return testCase;
   }
 
   void testCompress() throws Exception {
-    Encoder encoder = createEncoder();
+    final Encoder encoder = createEncoder();
 
-    for (HeaderBlock headerBlock : headerBlocks) {
+    for (final HeaderBlock headerBlock : headerBlocks) {
 
-      byte[] actual = encode(encoder, headerBlock.getHeaders(), headerBlock.getMaxHeaderTableSize(), sensitiveHeaders);
+      final byte[] actual = encode(encoder, headerBlock.getHeaders(), headerBlock.getMaxHeaderTableSize(), sensitiveHeaders);
 
       if (!Arrays.equals(actual, headerBlock.encodedBytes)) {
         throw new AssertionError(
@@ -75,12 +75,12 @@ final class TestCase {
             "\nACTUAL:\n" + Hex.encodeHexString(actual));
       }
 
-      List<HeaderField> actualDynamicTable = new ArrayList<HeaderField>();
+      final List<HeaderField> actualDynamicTable = new ArrayList<HeaderField>();
       for (int index = 0; index < encoder.length(); index++) {
         actualDynamicTable.add(encoder.getHeaderField(index));
       }
 
-      List<HeaderField> expectedDynamicTable = headerBlock.getDynamicTable();
+      final List<HeaderField> expectedDynamicTable = headerBlock.getDynamicTable();
 
       if (!expectedDynamicTable.equals(actualDynamicTable)) {
         throw new AssertionError(
@@ -97,14 +97,14 @@ final class TestCase {
   }
 
   void testDecompress() throws Exception {
-    Decoder decoder = createDecoder();
+    final Decoder decoder = createDecoder();
 
-    for (HeaderBlock headerBlock : headerBlocks) {
+    for (final HeaderBlock headerBlock : headerBlocks) {
 
-      List<HeaderField> actualHeaders = decode(decoder, headerBlock.encodedBytes);
+      final List<HeaderField> actualHeaders = decode(decoder, headerBlock.encodedBytes);
 
-      List<HeaderField> expectedHeaders = new ArrayList<HeaderField>();
-      for (HeaderField h : headerBlock.getHeaders()) {
+      final List<HeaderField> expectedHeaders = new ArrayList<HeaderField>();
+      for (final HeaderField h : headerBlock.getHeaders()) {
         expectedHeaders.add(new HeaderField(h.name, h.value));
       }
 
@@ -114,12 +114,12 @@ final class TestCase {
             "\nACTUAL:\n" + actualHeaders);
       }
 
-      List<HeaderField> actualDynamicTable = new ArrayList<HeaderField>();
+      final List<HeaderField> actualDynamicTable = new ArrayList<HeaderField>();
       for (int index = 0; index < decoder.length(); index++) {
         actualDynamicTable.add(decoder.getHeaderField(index));
       }
 
-      List<HeaderField> expectedDynamicTable = headerBlock.getDynamicTable();
+      final List<HeaderField> expectedDynamicTable = headerBlock.getDynamicTable();
 
       if (!expectedDynamicTable.equals(actualDynamicTable)) {
         throw new AssertionError(
@@ -153,39 +153,39 @@ final class TestCase {
     return new Decoder(8192, maxHeaderTableSize);
   }
 
-  private static byte[] encode(Encoder encoder, List<HeaderField> headers, int maxHeaderTableSize, boolean sensitive)
+  private static byte[] encode(final Encoder encoder, final List<HeaderField> headers, final int maxHeaderTableSize, final boolean sensitive)
       throws IOException {
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    final ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
     if (maxHeaderTableSize != -1) {
       encoder.setMaxHeaderTableSize(baos, maxHeaderTableSize);
     }
 
-    for (HeaderField e: headers) {
+    for (final HeaderField e: headers) {
       encoder.encodeHeader(baos, e.name, e.value, sensitive);
     }
 
     return baos.toByteArray();
   }
 
-  private static List<HeaderField> decode(Decoder decoder, byte[] expected) throws IOException {
-    List<HeaderField> headers = new ArrayList<HeaderField>();
-    TestHeaderListener listener = new TestHeaderListener(headers);
+  private static List<HeaderField> decode(final Decoder decoder, final byte[] expected) throws IOException {
+    final List<HeaderField> headers = new ArrayList<HeaderField>();
+    final TestHeaderListener listener = new TestHeaderListener(headers);
     decoder.decode(new ByteArrayInputStream(expected), listener);
     decoder.endHeaderBlock();
     return headers;
   }
 
-  private static String concat(List<String> l) {
-    StringBuilder ret = new StringBuilder();
-    for (String s : l) {
+  private static String concat(final List<String> l) {
+    final StringBuilder ret = new StringBuilder();
+    for (final String s : l) {
       ret.append(s);
     }
     return ret.toString();
   }
 
   static class HeaderBlock {
-    private int maxHeaderTableSize = -1;
+    private final int maxHeaderTableSize = -1;
     private byte[] encodedBytes;
     private List<String> encoded;
     private List<HeaderField> headers;
@@ -216,16 +216,16 @@ final class TestCase {
   static class HeaderFieldDeserializer implements JsonDeserializer<HeaderField> {
 
     @Override
-    public HeaderField deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+    public HeaderField deserialize(final JsonElement json, final Type typeOfT, final JsonDeserializationContext context)
         throws JsonParseException {
-      JsonObject jsonObject = json.getAsJsonObject();
-      Set<Map.Entry<String, JsonElement>> entrySet = jsonObject.entrySet();
+      final JsonObject jsonObject = json.getAsJsonObject();
+      final Set<Map.Entry<String, JsonElement>> entrySet = jsonObject.entrySet();
       if (entrySet.size() != 1) {
         throw new JsonParseException("JSON Object has multiple entries: " + entrySet);
       }
-      Map.Entry<String, JsonElement> entry = entrySet.iterator().next();
-      String name = entry.getKey();
-      String value = entry.getValue().getAsString();
+      final Map.Entry<String, JsonElement> entry = entrySet.iterator().next();
+      final String name = entry.getKey();
+      final String value = entry.getValue().getAsString();
       return new HeaderField(name, value);
     }
   }

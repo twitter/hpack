@@ -29,7 +29,7 @@ final class DynamicTable {
   /**
    * Creates a new dynamic table with the specified initial capacity.
    */
-  DynamicTable(int initialCapacity) {
+  DynamicTable(final int initialCapacity) {
     setCapacity(initialCapacity);
   }
 
@@ -37,7 +37,7 @@ final class DynamicTable {
    * Return the number of header fields in the dynamic table.
    */
   public int length() {
-    int length;
+    final int length;
     if (head < tail) {
       length = headerFields.length - tail + head;
     } else {
@@ -66,11 +66,11 @@ final class DynamicTable {
    * The first and newest entry is always at index 1,
    * and the oldest entry is at the index length().
    */
-  public HeaderField getEntry(int index) {
+  public HeaderField getEntry(final int index) {
     if (index <= 0 || index > length()) {
       throw new IndexOutOfBoundsException();
     }
-    int i = head - index;
+    final int i = head - index;
     if (i < 0) {
       return headerFields[i + headerFields.length];
     } else {
@@ -85,8 +85,8 @@ final class DynamicTable {
    * If the size of the new entry is larger than the table's capacity,
    * the dynamic table will be cleared.
    */
-  public void add(HeaderField header) {
-    int headerSize = header.size();
+  public void add(final HeaderField header) {
+    final int headerSize = header.size();
     if (headerSize > capacity) {
       clear();
       return;
@@ -105,7 +105,7 @@ final class DynamicTable {
    * Remove and return the oldest header field from the dynamic table.
    */
   public HeaderField remove() {
-    HeaderField removed = headerFields[tail];
+    final HeaderField removed = headerFields[tail];
     if (removed == null) {
       return null;
     }
@@ -137,7 +137,7 @@ final class DynamicTable {
    * Entries are evicted from the dynamic table until the size of the table
    * is less than or equal to the maximum size.
    */
-  public void setCapacity(int capacity) {
+  public void setCapacity(final int capacity) {
     if (capacity < 0) {
       throw new IllegalArgumentException("Illegal Capacity: "+ capacity);
     }
@@ -167,13 +167,13 @@ final class DynamicTable {
       return;
     }
 
-    HeaderField[] tmp = new HeaderField[maxEntries];
+    final HeaderField[] tmp = new HeaderField[maxEntries];
 
     // initially length will be 0 so there will be no copy
-    int len = length();
+    final int len = length();
     int cursor = tail;
     for (int i = 0; i < len; i++) {
-      HeaderField entry = headerFields[cursor++];
+      final HeaderField entry = headerFields[cursor++];
       tmp[i] = entry;
       if (cursor == headerFields.length) {
         cursor = 0;
